@@ -1,0 +1,6 @@
+{
+  "name": "Mi Capricho Secreto",
+  "description": "Plataforma de yogur artesanal, yogur griego y repostería exclusiva en Bogotá con pedidos personalizados y gestión de cocina en tiempo real.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

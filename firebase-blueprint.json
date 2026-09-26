@@ -1,0 +1,93 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile with contact, delivery and role information",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "nombre": { "type": "string", "minLength": 2, "maxLength": 100 },
+        "email": { "type": "string", "format": "email" },
+        "telefono": { "type": "string", "minLength": 7, "maxLength": 20 },
+        "direccion_envio": { "type": "string", "maxLength": 200 },
+        "barrio_localidad": { "type": "string", "maxLength": 100 },
+        "notas": { "type": "string", "maxLength": 500 },
+        "rol": { "type": "string", "enum": ["cliente", "admin"] },
+        "created_at": { "type": "string" },
+        "updated_at": { "type": "string" },
+        "activo": { "type": "boolean" }
+      },
+      "required": ["id", "nombre", "email", "telefono", "rol", "created_at", "activo"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Handcrafted order placed by customer or guest",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "codigo_orden": { "type": "string", "pattern": "^CAP-[0-9A-Z]+$" },
+        "usuario_id": { "type": "string" },
+        "cliente_nombre": { "type": "string", "minLength": 2, "maxLength": 100 },
+        "cliente_telefono": { "type": "string", "minLength": 7, "maxLength": 20 },
+        "direccion_envio": { "type": "string", "maxLength": 200 },
+        "barrio_localidad": { "type": "string", "maxLength": 100 },
+        "notas_entrega": { "type": "string", "maxLength": 500 },
+        "total": { "type": "number" },
+        "metodo_pago": { "type": "string", "enum": ["Contra entrega", "Transferencia bancaria"] },
+        "estado": { "type": "string", "enum": ["Pendiente", "En Preparación", "Listo", "Entregado"] },
+        "prioridad": { "type": "boolean" },
+        "tiempo_estimado_dias": { "type": "number" },
+        "created_at": { "type": "string" },
+        "updated_at": { "type": "string" }
+      },
+      "required": ["codigo_orden", "usuario_id", "cliente_nombre", "cliente_telefono", "total", "metodo_pago", "estado", "created_at"]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "Artisanal yogurt or seasonal pastry product",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "nombre": { "type": "string", "minLength": 2, "maxLength": 150 },
+        "descripcion": { "type": "string", "maxLength": 1000 },
+        "categoria": { "type": "string", "enum": ["Yogur Griego", "Yogur Casero", "Repostería de Temporada"] },
+        "precio": { "type": "number" },
+        "tiempo_preparacion_dias": { "type": "number" },
+        "imagen_url": { "type": "string" },
+        "activo": { "type": "boolean" },
+        "tamano": { "type": "string" },
+        "destacado": { "type": "boolean" }
+      },
+      "required": ["nombre", "categoria", "precio", "tiempo_preparacion_dias", "activo"]
+    },
+    "Admin": {
+      "title": "Admin",
+      "description": "Trusted administrative user reference",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "format": "email" },
+        "nombre": { "type": "string" },
+        "created_at": { "type": "string" }
+      },
+      "required": ["email"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Secure user profiles accessible by owner and admins"
+    },
+    "/orders/{orderId}": {
+      "schema": "Order",
+      "description": "Order records created by users/guests and managed by kitchen staff"
+    },
+    "/products/{productId}": {
+      "schema": "Product",
+      "description": "Public catalog of artisanal recipes"
+    },
+    "/admins/{adminId}": {
+      "schema": "Admin",
+      "description": "Trusted list of kitchen administrators"
+    }
+  }
+}

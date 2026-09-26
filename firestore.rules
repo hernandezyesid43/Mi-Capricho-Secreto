@@ -1,0 +1,111 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net: default-deny all paths
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // -------------------------------------------------------------
+    // Core Identity & Access Control Helpers
+    // -------------------------------------------------------------
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'hernandez.yesid43@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // -------------------------------------------------------------
+    // Entity Schema Validators
+    // -------------------------------------------------------------
+    function isValidUser(data) {
+      return data.nombre is string && data.nombre.size() >= 2 && data.nombre.size() <= 100
+        && data.email is string && data.email.size() <= 120
+        && data.telefono is string && data.telefono.size() >= 7 && data.telefono.size() <= 20
+        && data.rol in ['cliente', 'admin']
+        && data.activo is bool;
+    }
+
+    function isValidOrder(data) {
+      return data.codigo_orden is string && data.codigo_orden.size() <= 30
+        && data.cliente_nombre is string && data.cliente_nombre.size() >= 2 && data.cliente_nombre.size() <= 100
+        && data.cliente_telefono is string && data.cliente_telefono.size() >= 7 && data.cliente_telefono.size() <= 20
+        && data.total is number && data.total >= 0
+        && data.metodo_pago in ['Contra entrega', 'Transferencia bancaria']
+        && data.estado in ['Pendiente', 'En Preparación', 'Listo', 'Entregado'];
+    }
+
+    function isValidProduct(data) {
+      return data.nombre is string && data.nombre.size() >= 2 && data.nombre.size() <= 150
+        && data.categoria in ['Yogur Griego', 'Yogur Casero', 'Repostería de Temporada']
+        && data.precio is number && data.precio >= 0
+        && data.activo is bool;
+    }
+
+    // -------------------------------------------------------------
+    // Collection Match Blocks
+    // -------------------------------------------------------------
+
+    // Connection Health Check
+    match /test/{docId} {
+      allow read: if true;
+    }
+
+    // User Profiles
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
+      allow create: if (isOwner(userId) || isAdmin()) && isValidUser(incoming())
+        && (isAdmin() || incoming().rol == 'cliente');
+      allow update: if isValidUser(incoming()) && (
+        isAdmin() ||
+        (isOwner(userId) && incoming().rol == existing().rol && incoming().diff(existing()).affectedKeys().hasOnly(['nombre', 'telefono', 'direccion_envio', 'barrio_localidad', 'notas', 'updated_at']))
+      );
+      allow delete: if isAdmin();
+    }
+
+    // Trusted Administrators List
+    match /admins/{adminId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // Handcrafted Orders
+    match /orders/{orderId} {
+      allow get: if (isSignedIn() && (resource.data.usuario_id == request.auth.uid || isAdmin())) || resource.data.codigo_orden != null;
+      allow list: if (isSignedIn() && resource.data.usuario_id == request.auth.uid) || isAdmin();
+      allow create: if isValidOrder(incoming());
+      allow update: if isAdmin() && isValidOrder(incoming());
+      allow delete: if isAdmin();
+    }
+
+    // Public Artisanal Products Catalog
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if isAdmin() && isValidProduct(incoming());
+    }
+  }
+}
