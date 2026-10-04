@@ -76,4 +76,9 @@ export default function PremiumHeader() {
             id="cart-toggle-btn"
           >
             <ShoppingBag size={18} />
-            <span className
+          </button>
+        </div>
+      </header>
+    </>
+  );
+}

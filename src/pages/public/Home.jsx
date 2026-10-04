@@ -37,4 +37,11 @@ export default function Home() {
             </h1>
 
             <p className="hero-subtitle">
-            
+              Descubre nuestro catálogo exclusivo
+            </p>
+          </motion.div>
+        </div>
+      </section>
+    </motion.div>
+  );
+}

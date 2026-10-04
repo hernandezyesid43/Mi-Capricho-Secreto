@@ -320,4 +320,15 @@ export default function AdminPanel() {
       // Actualizar perfil existente
       const { data, error } = await supabase
         .from('perfiles')
-        .update({
+        .update({})
+          .eq('id', 1);
+     }
+  };
+
+  return (
+    <main className="admin-panel">
+      <h1>Panel de Administración</h1>
+      <p>Interfaz en recuperación.</p>
+    </main>
+  );
+}

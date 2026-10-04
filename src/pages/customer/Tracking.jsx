@@ -163,4 +163,14 @@ export default function Tracking() {
     setSearching(true)
 
     // 1. Buscar en demo mock orders si coincide
-    const demoFound = DE
+   const demoFound = null;
+      setSearching(false);
+    };
+
+    return (
+      <main className="tracking-page">
+        <h1>Rastreo de Pedidos</h1>
+        <p>Interfaz de seguimiento en mantenimiento temporal.</p>
+      </main>
+    );
+}

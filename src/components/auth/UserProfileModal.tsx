@@ -1,17 +1,17 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  X, 
-  User, 
-  Package, 
-  Clock, 
-  MapPin, 
-  Phone, 
-  Mail, 
-  Edit3, 
-  Check, 
-  ShieldCheck, 
-  LogOut, 
+import {
+  X,
+  User,
+  Package,
+  Clock,
+  MapPin,
+  Phone,
+  Mail,
+  Edit3,
+  Check,
+  ShieldCheck,
+  LogOut,
   ExternalLink,
   MessageCircle,
   Truck,
@@ -47,7 +47,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   onOpenAdmin
 }) => {
   const [activeTab, setActiveTab] = useState<'profile' | 'orders'>('profile');
-  
+
   // Profile edit form state
   const [nombre, setNombre] = useState(currentUser?.nombre || '');
   const [telefono, setTelefono] = useState(currentUser?.telefono || '');
@@ -162,11 +162,10 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                     <h2 className="font-serif text-xl sm:text-2xl font-bold tracking-tight text-white">
                       {currentUser.nombre}
                     </h2>
-                    <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${
-                      currentUser.rol === 'admin' 
-                        ? 'bg-[#E5A87B]/20 text-[#E5A87B] border-[#E5A87B]/40' 
+                    <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${currentUser.rol === 'admin'
+                        ? 'bg-[#E5A87B]/20 text-[#E5A87B] border-[#E5A87B]/40'
                         : 'bg-rose-500/20 text-rose-300 border-rose-500/30'
-                    }`}>
+                      }`}>
                       {currentUser.rol === 'admin' ? 'Administrador' : 'Cliente Registrado'}
                     </span>
                   </div>
@@ -192,11 +191,10 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
               <button
                 type="button"
                 onClick={() => setActiveTab('profile')}
-                className={`pb-3 px-4 text-xs font-bold transition-all relative flex items-center gap-2 cursor-pointer ${
-                  activeTab === 'profile'
+                className={`pb-3 px-4 text-xs font-bold transition-all relative flex items-center gap-2 cursor-pointer ${activeTab === 'profile'
                     ? 'text-[#C02E62]'
                     : 'text-stone-500 hover:text-stone-800'
-                }`}
+                  }`}
               >
                 <User className="w-4 h-4" />
                 <span>Mis Datos Personales</span>
@@ -208,11 +206,10 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
               <button
                 type="button"
                 onClick={() => setActiveTab('orders')}
-                className={`pb-3 px-4 text-xs font-bold transition-all relative flex items-center gap-2 cursor-pointer ${
-                  activeTab === 'orders'
+                className={`pb-3 px-4 text-xs font-bold transition-all relative flex items-center gap-2 cursor-pointer ${activeTab === 'orders'
                     ? 'text-[#C02E62]'
                     : 'text-stone-500 hover:text-stone-800'
-                }`}
+                  }`}
               >
                 <Package className="w-4 h-4" />
                 <span>Mis Pedidos Artesanales</span>
