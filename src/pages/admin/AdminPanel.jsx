@@ -321,8 +321,8 @@ export default function AdminPanel() {
       const { data, error } = await supabase
         .from('perfiles')
         .update({})
-          .eq('id', 1);
-     }
+        .eq('id', 1);
+    }
   };
 
   return (

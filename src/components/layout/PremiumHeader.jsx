@@ -76,6 +76,8 @@ export default function PremiumHeader() {
             id="cart-toggle-btn"
           >
             <ShoppingBag size={18} />
+            <span>Carrito</span>
+            {itemCount > 0 && <span className="cart-badge">{itemCount}</span>}
           </button>
         </div>
       </header>

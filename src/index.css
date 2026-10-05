@@ -1398,3 +1398,50 @@ select {
   font-weight: 700;
   color: var(--color-primary);
 }
+
+/* ============================================
+   Responsive & Mobile Design (<= 768px)
+   ============================================ */
+@media (max-width: 768px) {
+  h1 {
+    font-size: 28px;
+    line-height: 1.25;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: var(--space-2);
+    padding-right: var(--space-2);
+    word-break: break-word;
+  }
+
+  .hero-title {
+    font-size: clamp(26px, 6.5vw, 36px);
+    line-height: 1.2;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: var(--space-2);
+    padding-right: var(--space-2);
+    word-break: break-word;
+  }
+
+  .hero {
+    padding: var(--space-6) var(--space-2);
+  }
+
+  .hero-content {
+    width: 100%;
+    padding: 0 var(--space-2);
+  }
+
+  .hero-freshness {
+    font-size: 11px;
+    padding: 6px 12px;
+    text-align: center;
+    line-height: 1.4;
+    white-space: normal;
+  }
+
+  .hero-subtitle {
+    font-size: 15px;
+    padding: 0 var(--space-2);
+  }
+}
