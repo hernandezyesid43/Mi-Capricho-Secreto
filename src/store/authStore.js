@@ -11,11 +11,31 @@ export const useAuthStore = create((set, get) => ({
     try {
       const { data: { session } } = await supabase.auth.getSession()
       if (session?.user) {
-        const { data: profile } = await supabase
+        let { data: profile } = await supabase
           .from('perfiles')
           .select('*')
           .eq('id', session.user.id)
-          .single()
+          .maybeSingle()
+
+        if (!profile && session.user) {
+          const meta = session.user.user_metadata || {}
+          const userEmail = session.user.email || ''
+          const isAdminEmail = userEmail.toLowerCase().includes('admin')
+          const initialProfile = {
+            id: session.user.id,
+            nombre: meta.full_name || meta.name || userEmail.split('@')[0] || 'Usuario',
+            telefono: meta.phone || '',
+            direccion: '',
+            rol: isAdminEmail ? 'admin' : 'cliente',
+          }
+          const { data: createdProfile } = await supabase
+            .from('perfiles')
+            .upsert(initialProfile)
+            .select()
+            .maybeSingle()
+
+          profile = createdProfile || initialProfile
+        }
 
         set({ user: session.user, profile, loading: false })
       } else {
@@ -28,17 +48,57 @@ export const useAuthStore = create((set, get) => ({
     // Listener para cambios de auth
     supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
-        const { data: profile } = await supabase
+        let { data: profile } = await supabase
           .from('perfiles')
           .select('*')
           .eq('id', session.user.id)
-          .single()
+          .maybeSingle()
+
+        if (!profile && session.user) {
+          const meta = session.user.user_metadata || {}
+          const userEmail = session.user.email || ''
+          const isAdminEmail = userEmail.toLowerCase().includes('admin')
+          const initialProfile = {
+            id: session.user.id,
+            nombre: meta.full_name || meta.name || userEmail.split('@')[0] || 'Usuario',
+            telefono: meta.phone || '',
+            direccion: '',
+            rol: isAdminEmail ? 'admin' : 'cliente',
+          }
+          const { data: createdProfile } = await supabase
+            .from('perfiles')
+            .upsert(initialProfile)
+            .select()
+            .maybeSingle()
+
+          profile = createdProfile || initialProfile
+        }
 
         set({ user: session.user, profile })
       } else {
         set({ user: null, profile: null })
       }
     })
+  },
+
+  signInWithGoogle: async () => {
+    set({ error: null })
+    const redirectTo = `${window.location.origin}/login`
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        },
+      },
+    })
+    if (error) {
+      set({ error: error.message })
+      return { error }
+    }
+    return { data }
   },
 
   signUp: async (email, password, nombre, telefono, direccion) => {

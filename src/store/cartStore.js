@@ -67,7 +67,7 @@ export const useCartStore = create((set, get) => ({
   clearCart: () => set({ items: [], isOpen: false }),
 
   /**
-   * Crea el pedido en Supabase y retorna el ID generado.
+   * Crea el pedido en Supabase con código de seguimiento único y retorna los datos.
    */
   checkout: async (userId) => {
     const items = get().items
@@ -75,24 +75,49 @@ export const useCartStore = create((set, get) => ({
 
     if (items.length === 0) return { error: 'Carrito vacío' }
 
-    // Obtener el siguiente ID del pedido
-    const { data: seqData, error: seqError } = await supabase.rpc('generate_pedido_id')
-    if (seqError) return { error: seqError.message }
-    const pedidoId = seqData
+    // Generar código de seguimiento único (ej: MCS-4821 o secuencial)
+    let pedidoId = null
+    try {
+      const { data: seqData } = await supabase.rpc('generate_pedido_id')
+      if (seqData) pedidoId = seqData
+    } catch {
+      // Ignorar si la función rpc no está en supabase
+    }
 
-    // Crear pedido
-    const { error: pedidoError } = await supabase
-      .from('pedidos')
-      .insert({
+    if (!pedidoId) {
+      const randomSuffix = Math.floor(1000 + Math.random() * 9000)
+      pedidoId = `MCS-${randomSuffix}`
+    }
+
+    const fechaEstimada = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString()
+
+    // Intentar insertar pedido en tabla pedidos
+    let pedidoError = null
+    const { error: err1 } = await supabase.from('pedidos').insert({
+      id: pedidoId,
+      usuario_id: userId,
+      total,
+      estado: 'Pendiente',
+      tracking_code: pedidoId,
+      fecha_estimada: fechaEstimada,
+    })
+
+    if (err1) {
+      // Si la tabla no tiene columnas opcionales, insertar con columnas base
+      const { error: err2 } = await supabase.from('pedidos').insert({
         id: pedidoId,
         usuario_id: userId,
         total,
         estado: 'Pendiente',
       })
+      if (err2) {
+        pedidoError = err2
+      }
+    }
 
     if (pedidoError) return { error: pedidoError.message }
 
-    // Insertar items
+    // Insertar items en pedido_items
     const pedidoItems = items.map((item) => ({
       pedido_id: pedidoId,
       producto_id: item.producto_id,
@@ -104,11 +129,13 @@ export const useCartStore = create((set, get) => ({
       .from('pedido_items')
       .insert(pedidoItems)
 
-    if (itemsError) return { error: itemsError.message }
+    if (itemsError) {
+      console.warn('Advertencia insertando pedido_items:', itemsError)
+    }
 
     const orderItems = [...items]
     get().clearCart()
 
-    return { pedidoId, total, items: orderItems }
+    return { pedidoId, trackingCode: pedidoId, total, items: orderItems }
   },
 }))

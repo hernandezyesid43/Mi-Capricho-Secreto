@@ -60,7 +60,7 @@ export default function Home() {
 
             <motion.p className="hero-subtitle" variants={itemVariants}>
               Descubre creaciones artesanales exclusivas que despiertan tus sentidos.
-              Calidad insuperable, frescura garantizada y entrega 100% discreta.
+              Calidad insuperable y frescura garantizada.
             </motion.p>
 
             <motion.div className="hero-actions" variants={itemVariants}>
@@ -81,11 +81,11 @@ export default function Home() {
               </div>
               <div className="hero-feature-item">
                 <ShieldCheck size={16} className="hero-feature-icon" />
-                <span>Empaque Seguro & Discreto</span>
+                <span>Elaboración: 1 a 3 días</span>
               </div>
               <div className="hero-feature-item">
                 <Clock size={16} className="hero-feature-icon" />
-                <span>Atención Rápida</span>
+                <span>Entrega en Bogotá</span>
               </div>
             </motion.div>
           </motion.div>
