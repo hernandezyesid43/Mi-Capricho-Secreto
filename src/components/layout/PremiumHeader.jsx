@@ -69,6 +69,30 @@ export default function PremiumHeader() {
         </nav>
 
         <div className="header-icons">
+          {user ? (
+            <Link
+              to="/perfil"
+              className="header-account-btn"
+              title="Mi Cuenta"
+              id="header-account-btn"
+            >
+              <User size={18} />
+              <span className="account-text">
+                {profile?.nombre ? profile.nombre.split(' ')[0] : 'Mi Cuenta'}
+              </span>
+            </Link>
+          ) : (
+            <Link
+              to="/login"
+              className="header-account-btn"
+              title="Iniciar Sesión / Mi Cuenta"
+              id="header-login-btn"
+            >
+              <User size={18} />
+              <span className="account-text">Iniciar Sesión</span>
+            </Link>
+          )}
+
           <button
             className="header-cart-btn"
             onClick={toggleCart}

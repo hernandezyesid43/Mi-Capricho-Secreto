@@ -10,6 +10,7 @@ import Catalog from './pages/public/Catalog'
 import Profile from './pages/customer/Profile'
 import Tracking from './pages/customer/Tracking'
 import AdminPanel from './pages/admin/AdminPanel'
+import LoginPage from './pages/auth/LoginPage'
 
 function AnimatedRoutes() {
   const location = useLocation()
@@ -19,6 +20,8 @@ function AnimatedRoutes() {
       <Routes location={location} key={location.pathname}>
         <Route path="/" element={<Home />} />
         <Route path="/catalogo" element={<Catalog />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/auth" element={<LoginPage />} />
         <Route path="/perfil" element={<Profile />} />
         <Route path="/seguimiento" element={<Tracking />} />
         <Route path="/mcs-management" element={<AdminPanel />} />

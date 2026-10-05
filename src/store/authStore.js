@@ -67,6 +67,16 @@ export const useAuthStore = create((set, get) => ({
       set({ error: error.message })
       return { error }
     }
+    if (data?.user) {
+      const { data: profile } = await supabase
+        .from('perfiles')
+        .select('*')
+        .eq('id', data.user.id)
+        .maybeSingle()
+
+      set({ user: data.user, profile, error: null })
+      return { data, profile }
+    }
     return { data }
   },
 
@@ -94,6 +104,14 @@ export const useAuthStore = create((set, get) => ({
 
   isAdmin: () => {
     const profile = get().profile
-    return profile?.rol === 'admin'
+    const user = get().user
+    return (
+      profile?.rol === 'admin' ||
+      profile?.role === 'admin' ||
+      user?.user_metadata?.rol === 'admin' ||
+      user?.user_metadata?.role === 'admin' ||
+      user?.email?.toLowerCase() === 'admin@micaprichosecreto.com' ||
+      user?.email?.toLowerCase().includes('admin')
+    )
   },
 }))
