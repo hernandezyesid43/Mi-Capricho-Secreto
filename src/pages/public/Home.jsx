@@ -3,17 +3,20 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, PackageCheck, Sparkles, ShieldCheck, Clock } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
-// Componente de Partículas Interactivas
+// Componente de Partículas Interactivas - VERSIÓN LIMPIA
 function ParticleBackground() {
   const canvasRef = useRef(null);
   const particlesRef = useRef([]);
   const mouseRef = useRef({ x: 0, y: 0 });
+  const animationRef = useRef(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
     const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
@@ -22,40 +25,39 @@ function ParticleBackground() {
       constructor() {
         this.x = Math.random() * canvas.width;
         this.y = Math.random() * canvas.height;
-        this.size = Math.random() * 2 + 0.5;
-        this.speedX = (Math.random() - 0.5) * 0.5;
-        this.speedY = (Math.random() - 0.5) * 0.5;
-        this.opacity = Math.random() * 0.5 + 0.2;
-        this.color = ['rgba(252, 167, 181', 'rgba(212, 160, 168', 'rgba(183, 110, 121'][
-          Math.floor(Math.random() * 3)
-        ];
+        this.size = Math.random() * 1.5 + 0.3;
+        this.speedX = (Math.random() - 0.5) * 0.3;
+        this.speedY = (Math.random() - 0.5) * 0.3;
+        this.opacity = Math.random() * 0.4 + 0.15;
+        this.maxOpacity = this.opacity;
+        this.color = Math.floor(Math.random() * 3);
       }
 
-      update() {
+      update(mouseX, mouseY) {
         this.x += this.speedX;
         this.y += this.speedY;
-        
-        // Limites del canvas
+
+        // Limites
         if (this.x > canvas.width) this.x = 0;
         if (this.x < 0) this.x = canvas.width;
         if (this.y > canvas.height) this.y = 0;
         if (this.y < 0) this.y = canvas.height;
 
-        // Efecto de atracción al cursor
-        const dx = mouseRef.current.x - this.x;
-        const dy = mouseRef.current.y - this.y;
+        // Atracción al cursor
+        const dx = mouseX - this.x;
+        const dy = mouseY - this.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
 
         if (distance < 200) {
-          this.speedX += dx * 0.00005;
-          this.speedY += dy * 0.00005;
-          this.opacity = Math.min(this.opacity + 0.02, 0.8);
+          this.speedX += dx * 0.00003;
+          this.speedY += dy * 0.00003;
+          this.opacity = Math.min(this.opacity + 0.015, this.maxOpacity + 0.3);
         } else {
-          this.opacity = Math.max(this.opacity - 0.005, 0.2);
+          this.opacity = Math.max(this.opacity - 0.003, this.maxOpacity);
         }
 
         // Limitar velocidad
-        const maxSpeed = 2;
+        const maxSpeed = 1.5;
         const speed = Math.sqrt(this.speedX ** 2 + this.speedY ** 2);
         if (speed > maxSpeed) {
           this.speedX = (this.speedX / speed) * maxSpeed;
@@ -63,24 +65,27 @@ function ParticleBackground() {
         }
       }
 
-      draw() {
-        ctx.fillStyle = `${this.color}, ${this.opacity})`;
+      draw(ctx) {
+        const colors = [
+          'rgba(252, 167, 181',
+          'rgba(212, 160, 168',
+          'rgba(183, 110, 121'
+        ];
+
+        ctx.fillStyle = `${colors[this.color]}, ${this.opacity})`;
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
         ctx.fill();
-
-        // Glow effect
-        ctx.shadowBlur = 15;
-        ctx.shadowColor = `${this.color}, ${this.opacity * 0.5})`;
       }
     }
 
     // Inicializar partículas
-    for (let i = 0; i < 80; i++) {
+    particlesRef.current = [];
+    for (let i = 0; i < 60; i++) {
       particlesRef.current.push(new Particle());
     }
 
-    // Actualizar mouse position
+    // Mouse tracking
     const handleMouseMove = (e) => {
       mouseRef.current = { x: e.clientX, y: e.clientY };
     };
@@ -89,21 +94,21 @@ function ParticleBackground() {
 
     // Animar
     const animate = () => {
-      ctx.fillStyle = 'rgba(74, 14, 46, 0)';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.shadowBlur = 0;
+      // Limpiar canvas
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+      // Dibujar partículas
       particlesRef.current.forEach((particle) => {
-        particle.update();
-        particle.draw();
+        particle.update(mouseRef.current.x, mouseRef.current.y);
+        particle.draw(ctx);
       });
 
-      requestAnimationFrame(animate);
+      animationRef.current = requestAnimationFrame(animate);
     };
 
-    animate();
+    animationRef.current = requestAnimationFrame(animate);
 
-    // Manejar resize
+    // Resize
     const handleResize = () => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
@@ -114,6 +119,9 @@ function ParticleBackground() {
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('resize', handleResize);
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
     };
   }, []);
 
@@ -121,7 +129,7 @@ function ParticleBackground() {
     <canvas
       ref={canvasRef}
       className="fixed inset-0 z-0 pointer-events-none"
-      style={{ opacity: 0.6 }}
+      style={{ opacity: 0.5 }}
     />
   );
 }
@@ -176,17 +184,13 @@ export default function Home() {
       exit={{ opacity: 0 }}
       ref={containerRef}
     >
-      {/* Fondo con Partículas */}
       <ParticleBackground />
 
-      {/* Hero Section Principal */}
       <section className="hero-premium relative">
-        {/* Glows ambientales de fondo */}
         <div className="hero-ambient-glow hero-glow-1" />
         <div className="hero-ambient-glow hero-glow-2" />
         <div className="hero-ambient-glow hero-glow-3" />
 
-        {/* Efecto radial dinámico que sigue el cursor */}
         <motion.div
           className="hero-radial-light"
           animate={{
