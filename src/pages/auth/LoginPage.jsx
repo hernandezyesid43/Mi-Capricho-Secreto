@@ -1,97 +1,420 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-// Asegúrate de que la ruta a tu cliente de supabase sea correcta
-// import { supabase } from '../../utils/supabaseClient'; 
+import { useState, useEffect } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
+import {
+  Lock,
+  Mail,
+  User,
+  Phone,
+  MapPin,
+  Sparkles,
+  ShieldCheck,
+  ArrowRight,
+  Eye,
+  EyeOff,
+  CheckCircle2,
+  AlertCircle
+} from 'lucide-react'
+import { useAuthStore } from '../../store/authStore'
+
+const loginSchema = z.object({
+  email: z.string().email('Por favor ingresa un correo válido'),
+  password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres'),
+})
+
+const registerSchema = z.object({
+  nombre: z.string().min(2, 'Ingresa tu nombre completo'),
+  email: z.string().email('Por favor ingresa un correo válido'),
+  telefono: z.string().min(7, 'Ingresa un número telefónico válido'),
+  direccion: z.string().min(5, 'Ingresa tu dirección de entrega'),
+  password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres'),
+  confirmPassword: z.string(),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: 'Las contraseñas no coinciden',
+  path: ['confirmPassword'],
+})
 
 export default function LoginPage() {
-  const [isLogin, setIsLogin] = useState(true);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState('');
-  const navigate = useNavigate();
+  const [tab, setTab] = useState('login') // 'login' | 'register'
+  const [showPassword, setShowPassword] = useState(false)
+  const [serverError, setServerError] = useState(null)
+  const [successMsg, setSuccessMsg] = useState(null)
+  const [submitting, setSubmitting] = useState(false)
 
-  const handleAuth = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setMessage('');
+  const { signIn, signUp, signInWithGoogle, user, profile, isAdmin } = useAuthStore()
+  const navigate = useNavigate()
+  const location = useLocation()
+
+  // Si ya está autenticado, redirigir según su rol
+  useEffect(() => {
+    if (user) {
+      if (isAdmin()) {
+        navigate('/mcs-management', { replace: true })
+      } else {
+        const from = location.state?.from?.pathname || '/catalogo'
+        navigate(from, { replace: true })
+      }
+    }
+  }, [user, profile, navigate, location, isAdmin])
+
+  const schema = tab === 'login' ? loginSchema : registerSchema
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    reset,
+  } = useForm({
+    resolver: zodResolver(schema),
+    mode: 'onTouched',
+  })
+
+  const handleTabChange = (newTab) => {
+    setTab(newTab)
+    setServerError(null)
+    setSuccessMsg(null)
+    reset()
+  }
+
+  const handleGoogleAuth = async () => {
+    setSubmitting(true)
+    setServerError(null)
+    try {
+      const res = await signInWithGoogle()
+      if (res?.error) {
+        setServerError(res.error.message || 'No fue posible conectar con Google')
+        setSubmitting(false)
+      }
+    } catch {
+      setServerError('Error al iniciar sesión con Google')
+      setSubmitting(false)
+    }
+  }
+
+  const onSubmit = async (data) => {
+    setSubmitting(true)
+    setServerError(null)
+    setSuccessMsg(null)
 
     try {
-      // Aquí simulamos o conectamos con Supabase
-      // Si usas Supabase Auth real:
-      /*
-      if (isLogin) {
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-      } else {
-        const { data, error } = await supabase.auth.signUp({ email, password });
-        if (error) throw error;
-      }
-      */
-
-      // Simulación temporal funcional para avanzar rápido sin errores de conexión:
-      setTimeout(() => {
-        if (email.includes('admin')) {
-          alert('Bienvenido Administrador');
-          navigate('/mcs-management');
+      if (tab === 'login') {
+        const res = await signIn(data.email.trim(), data.password)
+        if (res?.error) {
+          setServerError(
+            res.error.message?.includes('Invalid login credentials')
+              ? 'Correo electrónico o contraseña incorrectos'
+              : res.error.message || 'Error al iniciar sesión'
+          )
         } else {
-          alert('Inicio de sesión exitoso');
-          navigate('/catalogo');
-        }
-        setLoading(false);
-      }, 1000);
+          // Determinar redirección tras login
+          const userProfile = res?.profile
+          const userObj = res?.data?.user
+          const isUserAdmin =
+            userProfile?.rol === 'admin' ||
+            userProfile?.role === 'admin' ||
+            userObj?.user_metadata?.rol === 'admin' ||
+            userObj?.user_metadata?.role === 'admin' ||
+            data.email.trim().toLowerCase().includes('admin')
 
-    } catch (error) {
-      setMessage(error.message || 'Ocurrió un error en la autenticación');
-      setLoading(false);
+          if (isUserAdmin) {
+            navigate('/mcs-management', { replace: true })
+          } else {
+            const from = location.state?.from?.pathname || '/catalogo'
+            navigate(from, { replace: true })
+          }
+        }
+      } else {
+        const res = await signUp(
+          data.email.trim(),
+          data.password,
+          data.nombre.trim(),
+          data.telefono.trim(),
+          data.direccion.trim()
+        )
+        if (res?.error) {
+          setServerError(res.error.message || 'Error al registrar tu cuenta')
+        } else {
+          setSuccessMsg(
+            '¡Tu cuenta ha sido creada exitosamente! Puedes iniciar sesión a continuación.'
+          )
+          setTab('login')
+          reset()
+        }
+      }
+    } catch {
+      setServerError('Ocurrió un error inesperado. Por favor intenta nuevamente.')
+    } finally {
+      setSubmitting(false)
     }
-  };
+  }
 
   return (
-    <div className="auth-container" style={{ padding: '80px 20px', maxWidth: '400px', margin: '0 auto', color: '#fff' }}>
-      <h2 style={{ textAlign: 'center', marginBottom: '20px' }}>
-        {isLogin ? 'Iniciar Sesión' : 'Crear Cuenta'}
-      </h2>
+    <motion.div
+      className="page-transition auth-page-wrapper"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.4 }}
+    >
+      <div className="auth-ambient-glow auth-glow-1" />
+      <div className="auth-ambient-glow auth-glow-2" />
 
-      {message && <div style={{ background: '#ff4d4d', padding: '10px', marginBottom: '15px', borderRadius: '5px' }}>{message}</div>}
-
-      <form onSubmit={handleAuth} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-        <div>
-          <label style={{ display: 'block', marginBottom: '5px' }}>Correo Electrónico</label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            style={{ width: '100%', padding: '10px', borderRadius: '5px', border: '1px solid #ccc', background: '#222', color: '#fff' }}
-            placeholder="tu@correo.com"
-          />
+      <div className="auth-card-container">
+        <div className="auth-card-header">
+          <Link to="/" className="auth-brand-logo">
+            Mi Capricho <span>Secreto</span>
+          </Link>
+          <p className="auth-card-subtitle">
+            {tab === 'login'
+              ? 'Accede para gestionar tus pedidos y caprichos favoritos'
+              : 'Regístrate y disfruta de una experiencia gastronómica exclusiva'}
+          </p>
         </div>
 
-        <div>
-          <label style={{ display: 'block', marginBottom: '5px' }}>Contraseña</label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            style={{ width: '100%', padding: '10px', borderRadius: '5px', border: '1px solid #ccc', background: '#222', color: '#fff' }}
-            placeholder="••••••••"
-          />
-        </div>
-
+        {/* Botón de Google OAuth */}
         <button
-          type="submit"
-          disabled={loading}
-          style={{ padding: '12px', background: '#a8325a', color: '#fff', border: 'none', borderRadius: '5px', fontWeight: 'bold', cursor: 'pointer' }}
+          type="button"
+          className="btn-google-auth"
+          onClick={handleGoogleAuth}
+          disabled={submitting}
+          id="btn-google-login"
         >
-          {loading ? 'Procesando...' : (isLogin ? 'Entrar' : 'Registrarse')}
+          <svg width="20" height="20" viewBox="0 0 24 24" className="google-icon" aria-hidden="true">
+            <path
+              fill="#4285F4"
+              d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"
+            />
+            <path
+              fill="#34A853"
+              d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.26v3.15C3.27 21.37 7.34 24 12 24z"
+            />
+            <path
+              fill="#FBBC05"
+              d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.26C.46 8.17 0 9.97 0 12s.46 3.83 1.26 5.42l4.02-3.15z"
+            />
+            <path
+              fill="#EA4335"
+              d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.27 2.63 1.26 6.58l4.02 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
+            />
+          </svg>
+          <span>Continuar con Google</span>
         </button>
-      </form>
 
-      <p style={{ textAlign: 'center', marginTop: '20px', cursor: 'pointer', color: '#d48fa4' }} onClick={() => setIsLogin(!isLogin)}>
-        {isLogin ? '¿No tienes cuenta? Regístrate aquí' : '¿Ya tienes cuenta? Inicia sesión'}
-      </p>
-    </div>
-  );
+        {/* Divisor */}
+        <div className="auth-divider">
+          <span>o con correo electrónico</span>
+        </div>
+
+        {/* Selector de Pestañas */}
+        <div className="auth-tabs">
+          <button
+            type="button"
+            className={`auth-tab-btn ${tab === 'login' ? 'active' : ''}`}
+            onClick={() => handleTabChange('login')}
+          >
+            Iniciar Sesión
+          </button>
+          <button
+            type="button"
+            className={`auth-tab-btn ${tab === 'register' ? 'active' : ''}`}
+            onClick={() => handleTabChange('register')}
+          >
+            Registrarse
+          </button>
+        </div>
+
+        {/* Mensajes de Feedback */}
+        <AnimatePresence mode="wait">
+          {successMsg && (
+            <motion.div
+              className="auth-feedback-box success"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+            >
+              <CheckCircle2 size={18} className="feedback-icon" />
+              <span>{successMsg}</span>
+            </motion.div>
+          )}
+
+          {serverError && (
+            <motion.div
+              className="auth-feedback-box error"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+            >
+              <AlertCircle size={18} className="feedback-icon" />
+              <span>{serverError}</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Formulario */}
+        <form onSubmit={handleSubmit(onSubmit)} className="auth-form" noValidate>
+          {tab === 'register' && (
+            <div className="form-group">
+              <label className="form-input-label" htmlFor="register-nombre">
+                <User size={15} /> Nombre Completo
+              </label>
+              <input
+                id="register-nombre"
+                type="text"
+                placeholder="Ej: Laura Gómez"
+                className={`form-input-field ${errors.nombre ? 'input-error' : ''}`}
+                {...register('nombre')}
+              />
+              {errors.nombre && (
+                <p className="form-error-msg">{errors.nombre.message}</p>
+              )}
+            </div>
+          )}
+
+          <div className="form-group">
+            <label className="form-input-label" htmlFor="auth-email">
+              <Mail size={15} /> Correo Electrónico
+            </label>
+            <input
+              id="auth-email"
+              type="email"
+              placeholder="tu.correo@ejemplo.com"
+              className={`form-input-field ${errors.email ? 'input-error' : ''}`}
+              {...register('email')}
+            />
+            {errors.email && (
+              <p className="form-error-msg">{errors.email.message}</p>
+            )}
+          </div>
+
+          {tab === 'register' && (
+            <>
+              <div className="form-group">
+                <label className="form-input-label" htmlFor="register-telefono">
+                  <Phone size={15} /> Teléfono / WhatsApp
+                </label>
+                <input
+                  id="register-telefono"
+                  type="tel"
+                  placeholder="Ej: 3001234567"
+                  className={`form-input-field ${errors.telefono ? 'input-error' : ''}`}
+                  {...register('telefono')}
+                />
+                {errors.telefono && (
+                  <p className="form-error-msg">{errors.telefono.message}</p>
+                )}
+              </div>
+
+              <div className="form-group">
+                <label className="form-input-label" htmlFor="register-direccion">
+                  <MapPin size={15} /> Dirección de Entrega
+                </label>
+                <input
+                  id="register-direccion"
+                  type="text"
+                  placeholder="Ej: Calle 123 # 45-67, Apto 302"
+                  className={`form-input-field ${errors.direccion ? 'input-error' : ''}`}
+                  {...register('direccion')}
+                />
+                {errors.direccion && (
+                  <p className="form-error-msg">{errors.direccion.message}</p>
+                )}
+              </div>
+            </>
+          )}
+
+          <div className="form-group">
+            <label className="form-input-label" htmlFor="auth-password">
+              <Lock size={15} /> Contraseña
+            </label>
+            <div className="input-password-wrapper">
+              <input
+                id="auth-password"
+                type={showPassword ? 'text' : 'password'}
+                placeholder="••••••••"
+                className={`form-input-field ${errors.password ? 'input-error' : ''}`}
+                {...register('password')}
+              />
+              <button
+                type="button"
+                className="btn-password-toggle"
+                onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+            {errors.password && (
+              <p className="form-error-msg">{errors.password.message}</p>
+            )}
+          </div>
+
+          {tab === 'register' && (
+            <div className="form-group">
+              <label className="form-input-label" htmlFor="auth-confirm-password">
+                <ShieldCheck size={15} /> Confirmar Contraseña
+              </label>
+              <input
+                id="auth-confirm-password"
+                type={showPassword ? 'text' : 'password'}
+                placeholder="••••••••"
+                className={`form-input-field ${errors.confirmPassword ? 'input-error' : ''}`}
+                {...register('confirmPassword')}
+              />
+              {errors.confirmPassword && (
+                <p className="form-error-msg">{errors.confirmPassword.message}</p>
+              )}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            className="btn-rose auth-submit-btn"
+            disabled={submitting}
+            id="auth-main-submit-btn"
+          >
+            {submitting ? (
+              <div className="spinner-sm" />
+            ) : (
+              <>
+                <span>{tab === 'login' ? 'Iniciar Sesión' : 'Crear Cuenta'}</span>
+                <ArrowRight size={18} />
+              </>
+            )}
+          </button>
+        </form>
+
+        <div className="auth-card-footer">
+          {tab === 'login' ? (
+            <p>
+              ¿Aún no tienes cuenta?{' '}
+              <button
+                type="button"
+                className="auth-link-btn"
+                onClick={() => handleTabChange('register')}
+              >
+                Regístrate aquí
+              </button>
+            </p>
+          ) : (
+            <p>
+              ¿Ya tienes una cuenta?{' '}
+              <button
+                type="button"
+                className="auth-link-btn"
+                onClick={() => handleTabChange('login')}
+              >
+                Inicia sesión aquí
+              </button>
+            </p>
+          )}
+
+          <div className="auth-back-home">
+            <Link to="/">← Regresar a la página principal</Link>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  )
 }
