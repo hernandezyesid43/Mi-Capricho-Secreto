@@ -1687,8 +1687,17 @@ select {
 }
 
 @keyframes pulseDotSmall {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.3); opacity: 0.6; }
+
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  50% {
+    transform: scale(1.3);
+    opacity: 0.6;
+  }
 }
 
 /* ============================================
@@ -3311,4 +3320,165 @@ select {
   .admin-table-container {
     overflow-x: auto;
   }
-}
+
+  /* Fondo animado moderno y elegante para el Home */
+  @keyframes gradientBackground {
+    0% {
+      background-position: 0% 50%;
+    }
+
+    50% {
+      background-position: 100% 50%;
+    }
+
+    100% {
+      background-position: 0% 50%;
+    }
+  }
+
+  .home,
+  .page-transition,
+  .hero {
+    background: linear-gradient(-45deg, #2a0815, #1a050d, #3b091f, #120308);
+    background-size: 400% 400%;
+    animation: gradientBackground 15s ease infinite;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Efecto de brillo flotante sutil (Glow) detrás del título */
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: 20%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 350px;
+    height: 350px;
+    background: radial-gradient(circle, rgba(212, 143, 164, 0.15) 0%, rgba(0, 0, 0, 0) 70%);
+    border-radius: 50%;
+    z-index: 0;
+    pointer-events: none;
+    animation: pulseGlow 6s ease-in-out infinite alternate;
+  }
+
+  @keyframes pulseGlow {
+    0% {
+      transform: translateX(-50%) scale(1);
+      opacity: 0.6;
+    }
+
+    100% {
+      transform: translateX(-50%) scale(1.3);
+      opacity: 1;
+    }
+  }
+}
+
+/* Fondo animado moderno y elegante para el Home */
+@keyframes gradientBackground {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.home,
+.page-transition,
+.hero {
+  background: linear-gradient(-45deg, #2a0815, #1a050d, #3b091f, #120308);
+  background-size: 400% 400%;
+  animation: gradientBackground 15s ease infinite;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Efecto de brillo flotante sutil (Glow) detrás del título */
+.hero::before {
+  content: '';
+  position: absolute;
+  top: 20%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 350px;
+  height: 350px;
+  background: radial-gradient(circle, rgba(212, 143, 164, 0.15) 0%, rgba(0, 0, 0, 0) 70%);
+  border-radius: 50%;
+  z-index: 0;
+  pointer-events: none;
+  animation: pulseGlow 6s ease-in-out infinite alternate;
+}
+
+@keyframes pulseGlow {
+  0% {
+    transform: translateX(-50%) scale(1);
+    opacity: 0.6;
+  }
+
+  100% {
+    transform: translateX(-50%) scale(1.3);
+    opacity: 1;
+  }
+}
+
+/* ==========================================
+   Fondo Dinámico y Elegante para Mi Capricho Secreto
+   ========================================== */
+@keyframes gradientBackground {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.home,
+.page-transition,
+.hero {
+  background: linear-gradient(-45deg, #2a0815, #1a050d, #3b091f, #120308) !important;
+  background-size: 400% 400% !important;
+  animation: gradientBackground 15s ease infinite !important;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Efecto de brillo flotante sutil (Glow) detrás del título */
+.hero::before {
+  content: '';
+  position: absolute;
+  top: 25%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(212, 143, 164, 0.18) 0%, rgba(0, 0, 0, 0) 70%);
+  border-radius: 50%;
+  z-index: 0;
+  pointer-events: none;
+  animation: pulseGlow 6s ease-in-out infinite alternate;
+}
+
+@keyframes pulseGlow {
+  0% {
+    transform: translateX(-50%) scale(1);
+    opacity: 0.5;
+  }
+
+  100% {
+    transform: translateX(-50%) scale(1.35);
+    opacity: 0.9;
+  }
+}
