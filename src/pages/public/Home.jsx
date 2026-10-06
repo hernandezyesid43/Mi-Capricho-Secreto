@@ -1,158 +1,8 @@
-import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
-import { ArrowRight, PackageCheck, Sparkles, ShieldCheck, Clock } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
-
-// Componente de Partículas Interactivas - VERSIÓN LIMPIA
-function ParticleBackground() {
-  const canvasRef = useRef(null);
-  const particlesRef = useRef([]);
-  const mouseRef = useRef({ x: 0, y: 0 });
-  const animationRef = useRef(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-
-    // Crear partículas
-    class Particle {
-      constructor() {
-        this.x = Math.random() * canvas.width;
-        this.y = Math.random() * canvas.height;
-        this.size = Math.random() * 1.5 + 0.3;
-        this.speedX = (Math.random() - 0.5) * 0.3;
-        this.speedY = (Math.random() - 0.5) * 0.3;
-        this.opacity = Math.random() * 0.4 + 0.15;
-        this.maxOpacity = this.opacity;
-        this.color = Math.floor(Math.random() * 3);
-      }
-
-      update(mouseX, mouseY) {
-        this.x += this.speedX;
-        this.y += this.speedY;
-
-        // Limites
-        if (this.x > canvas.width) this.x = 0;
-        if (this.x < 0) this.x = canvas.width;
-        if (this.y > canvas.height) this.y = 0;
-        if (this.y < 0) this.y = canvas.height;
-
-        // Atracción al cursor
-        const dx = mouseX - this.x;
-        const dy = mouseY - this.y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-
-        if (distance < 200) {
-          this.speedX += dx * 0.00003;
-          this.speedY += dy * 0.00003;
-          this.opacity = Math.min(this.opacity + 0.015, this.maxOpacity + 0.3);
-        } else {
-          this.opacity = Math.max(this.opacity - 0.003, this.maxOpacity);
-        }
-
-        // Limitar velocidad
-        const maxSpeed = 1.5;
-        const speed = Math.sqrt(this.speedX ** 2 + this.speedY ** 2);
-        if (speed > maxSpeed) {
-          this.speedX = (this.speedX / speed) * maxSpeed;
-          this.speedY = (this.speedY / speed) * maxSpeed;
-        }
-      }
-
-      draw(ctx) {
-        const colors = [
-          'rgba(252, 167, 181',
-          'rgba(212, 160, 168',
-          'rgba(183, 110, 121'
-        ];
-
-        ctx.fillStyle = `${colors[this.color]}, ${this.opacity})`;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
-
-    // Inicializar partículas
-    particlesRef.current = [];
-    for (let i = 0; i < 60; i++) {
-      particlesRef.current.push(new Particle());
-    }
-
-    // Mouse tracking
-    const handleMouseMove = (e) => {
-      mouseRef.current = { x: e.clientX, y: e.clientY };
-    };
-
-    window.addEventListener('mousemove', handleMouseMove);
-
-    // Animar
-    const animate = () => {
-      // Limpiar canvas
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      // Dibujar partículas
-      particlesRef.current.forEach((particle) => {
-        particle.update(mouseRef.current.x, mouseRef.current.y);
-        particle.draw(ctx);
-      });
-
-      animationRef.current = requestAnimationFrame(animate);
-    };
-
-    animationRef.current = requestAnimationFrame(animate);
-
-    // Resize
-    const handleResize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
-
-    window.addEventListener('resize', handleResize);
-
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('resize', handleResize);
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
-    };
-  }, []);
-
-  return (
-    <canvas
-      ref={canvasRef}
-      className="fixed inset-0 z-0 pointer-events-none"
-      style={{ opacity: 0.5 }}
-    />
-  );
-}
+import { motion } from 'framer-motion'
+import { Link } from 'react-router-dom'
+import { ArrowRight, PackageCheck, Sparkles, ShieldCheck, Clock } from 'lucide-react'
 
 export default function Home() {
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const containerRef = useRef(null);
-
-  useEffect(() => {
-    const handleMouseMove = (e) => {
-      if (containerRef.current) {
-        const rect = containerRef.current.getBoundingClientRect();
-        setMousePosition({
-          x: e.clientX - rect.left,
-          y: e.clientY - rect.top,
-        });
-      }
-    };
-
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, []);
-
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -162,7 +12,7 @@ export default function Home() {
         delayChildren: 0.1,
       },
     },
-  };
+  }
 
   const itemVariants = {
     hidden: { opacity: 0, y: 24 },
@@ -174,7 +24,7 @@ export default function Home() {
         ease: [0.22, 1, 0.36, 1],
       },
     },
-  };
+  }
 
   return (
     <motion.div
@@ -182,42 +32,28 @@ export default function Home() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      ref={containerRef}
     >
-      <ParticleBackground />
-
-      <section className="hero-premium relative">
+      {/* Hero Section Principal */}
+      <section className="hero">
+        {/* Glows ambientales de fondo */}
         <div className="hero-ambient-glow hero-glow-1" />
         <div className="hero-ambient-glow hero-glow-2" />
         <div className="hero-ambient-glow hero-glow-3" />
 
-        <motion.div
-          className="hero-radial-light"
-          animate={{
-            left: `${mousePosition.x}px`,
-            top: `${mousePosition.y}px`,
-          }}
-          transition={{
-            type: 'spring',
-            damping: 30,
-            stiffness: 200,
-          }}
-        />
-
-        <div className="hero-content relative z-10">
+        <div className="hero-content">
           <motion.div
             variants={containerVariants}
             initial="hidden"
             animate="visible"
           >
             <motion.div variants={itemVariants}>
-              <div className="hero-freshness glass-effect">
+              <div className="hero-freshness">
                 <Sparkles size={16} className="hero-freshness-icon" />
                 <span>Lo preparamos y envasamos exclusivamente bajo tu pedido</span>
               </div>
             </motion.div>
 
-            <motion.h1 className="hero-title gradient-text-luxury" variants={itemVariants}>
+            <motion.h1 className="hero-title" variants={itemVariants}>
               El placer de lo <em>auténtico</em>,<br />
               hecho a tu medida.
             </motion.h1>
@@ -228,26 +64,26 @@ export default function Home() {
             </motion.p>
 
             <motion.div className="hero-actions" variants={itemVariants}>
-              <Link to="/catalogo" className="hero-btn-primary glass-glow">
+              <Link to="/catalogo" className="hero-btn-primary">
                 <span>Ver Catálogo</span>
                 <ArrowRight size={18} className="btn-arrow-icon" />
               </Link>
-              <Link to="/seguimiento" className="hero-btn-secondary glass-effect">
+              <Link to="/seguimiento" className="hero-btn-secondary">
                 <PackageCheck size={18} />
                 <span>Rastrear Pedido</span>
               </Link>
             </motion.div>
 
             <motion.div className="hero-features-list" variants={itemVariants}>
-              <div className="hero-feature-item glass-effect-sm">
+              <div className="hero-feature-item">
                 <Sparkles size={16} className="hero-feature-icon" />
                 <span>100% Artesanal & Fresco</span>
               </div>
-              <div className="hero-feature-item glass-effect-sm">
+              <div className="hero-feature-item">
                 <ShieldCheck size={16} className="hero-feature-icon" />
                 <span>Elaboración: 1 a 3 días</span>
               </div>
-              <div className="hero-feature-item glass-effect-sm">
+              <div className="hero-feature-item">
                 <Clock size={16} className="hero-feature-icon" />
                 <span>Entrega en Bogotá</span>
               </div>
@@ -256,5 +92,6 @@ export default function Home() {
         </div>
       </section>
     </motion.div>
-  );
+  )
 }
+
