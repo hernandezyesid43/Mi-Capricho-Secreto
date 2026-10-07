@@ -17,7 +17,6 @@ import {
   ArrowRight,
   MapPin,
   Calendar,
-  AlertCircle,
   RefreshCw
 } from 'lucide-react'
 import { supabase } from '../../services/supabase'
@@ -146,117 +145,6 @@ const STATUS_DETAILS = {
   },
 }
 
-const DEMO_ORDERS = [
-  {
-    id: 'MCS-101',
-    tracking_code: 'MCS-101',
-    created_at: new Date(Date.now() - 25 * 60 * 1000).toISOString(),
-    fecha_estimada: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
-    estado: 'Pendiente',
-    total: 36000,
-    direccion: 'Cra 15 # 85-30, Apto 402, Bogotá',
-    perfiles: { nombre: 'Camila Rodríguez', telefono: '3109876543' },
-    pedido_items: [
-      {
-        id: 1,
-        cantidad: 2,
-        precio_unitario: 14000,
-        productos: {
-          nombre: 'Yogur Griego con Frutos Rojos',
-          imagen_url:
-            'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=300&auto=format&fit=crop&q=80',
-        },
-      },
-      {
-        id: 2,
-        cantidad: 1,
-        precio_unitario: 8000,
-        productos: {
-          nombre: 'Muffin Artesanal de Avena y Miel',
-          imagen_url:
-            'https://images.unsplash.com/photo-1586985289688-ca3cf47d3e6e?w=300&auto=format&fit=crop&q=80',
-        },
-      },
-    ],
-  },
-  {
-    id: 'MCS-102',
-    tracking_code: 'MCS-102',
-    created_at: new Date(Date.now() - 90 * 60 * 1000).toISOString(),
-    fecha_estimada: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-    estado: 'En Preparación',
-    total: 26000,
-    direccion: 'Calle 116 # 9-45, Bogotá',
-    perfiles: { nombre: 'Andrés Morales', telefono: '3123456789' },
-    pedido_items: [
-      {
-        id: 3,
-        cantidad: 2,
-        precio_unitario: 13000,
-        productos: {
-          nombre: 'Yogur Casero Melocotón & Maracuyá',
-          imagen_url:
-            'https://images.unsplash.com/photo-1505253716362-afaea1d3d1af?w=300&auto=format&fit=crop&q=80',
-        },
-      },
-    ],
-  },
-  {
-    id: 'MCS-103',
-    tracking_code: 'MCS-103',
-    created_at: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-    fecha_estimada: new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString(),
-    estado: 'Listo',
-    total: 31000,
-    direccion: 'Av 19 # 104-20, Bogotá',
-    perfiles: { nombre: 'Sofía Castro', telefono: '3157894561' },
-    pedido_items: [
-      {
-        id: 4,
-        cantidad: 1,
-        precio_unitario: 14000,
-        productos: {
-          nombre: 'Yogur Griego Natural Sin Azúcar',
-          imagen_url:
-            'https://images.unsplash.com/photo-1571212515416-fef01fc43637?w=300&auto=format&fit=crop&q=80',
-        },
-      },
-      {
-        id: 5,
-        cantidad: 1,
-        precio_unitario: 17000,
-        productos: {
-          nombre: 'Tarta Artesanal de Frutos del Bosque',
-          imagen_url:
-            'https://images.unsplash.com/photo-1533134242443-d4fd215305ad?w=300&auto=format&fit=crop&q=80',
-        },
-      },
-    ],
-  },
-  {
-    id: 'MCS-104',
-    tracking_code: 'MCS-104',
-    created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-    fecha_estimada: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-    estado: 'Entregado',
-    total: 18000,
-    direccion: 'Calle 72 # 5-20, Bogotá',
-    perfiles: { nombre: 'Juan Fernando', telefono: '3201239874' },
-    pedido_items: [
-      {
-        id: 6,
-        cantidad: 1,
-        precio_unitario: 18000,
-        productos: {
-          nombre: 'Parfait Artesanal de Chía y Mango',
-          imagen_url:
-            'https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?w=300&auto=format&fit=crop&q=80',
-        },
-      },
-    ],
-  },
-]
-
 export default function Tracking() {
   const [searchParams, setSearchParams] = useSearchParams()
   const initialOrderQuery = searchParams.get('order') || ''
@@ -315,9 +203,8 @@ export default function Tracking() {
 
     const cleanCode = rawCode.toUpperCase()
 
-    // 1. Consultar en Supabase (tabla pedidos)
+    // Consulta exclusiva en Supabase (tabla pedidos)
     try {
-      // Búsqueda flexible por id o tracking_code
       const { data: dbOrder, error } = await supabase
         .from('pedidos')
         .select('*, perfiles(nombre, telefono, direccion), pedido_items(*, productos(*))')
@@ -327,26 +214,14 @@ export default function Tracking() {
       if (!error && dbOrder) {
         setCurrentOrder(dbOrder)
         setSearchParams({ order: cleanCode })
-        setLoading(false)
-        return
+      } else {
+        setCurrentOrder(null)
+        addToast('No encontramos ningún pedido registrado con ese código', 'error')
       }
     } catch (err) {
       console.warn('Error consultando Supabase:', err)
-    }
-
-    // 2. Fallback a DEMO_ORDERS si coincide con un código de prueba
-    const demoFound = DEMO_ORDERS.find(
-      (o) =>
-        o.id.toUpperCase() === cleanCode ||
-        o.tracking_code?.toUpperCase() === cleanCode
-    )
-
-    if (demoFound) {
-      setCurrentOrder(demoFound)
-      setSearchParams({ order: cleanCode })
-    } else {
       setCurrentOrder(null)
-      addToast('No encontramos ningún pedido con ese código', 'error')
+      addToast('Ocurrió un error al consultar el pedido', 'error')
     }
 
     setLoading(false)
@@ -394,7 +269,7 @@ export default function Tracking() {
           </span>
           <h1 className="tracking-main-title">Rastrea tu Pedido</h1>
           <p className="tracking-subtitle">
-            Ingresa tu código único de seguimiento (ej: <strong>MCS-101</strong>) para conocer en qué etapa artesanal se encuentra tu capricho.
+            Ingresa tu código único de seguimiento para conocer en qué etapa artesanal se encuentra tu capricho.
           </p>
 
           {/* Formulario de Búsqueda */}
@@ -409,7 +284,7 @@ export default function Tracking() {
               <Search size={20} className="tracking-search-icon" />
               <input
                 type="text"
-                placeholder="Ingresa tu código (ej: MCS-101, MCS-7842)..."
+                placeholder="Ingresa tu código de pedido..."
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 className="tracking-input"
@@ -531,9 +406,8 @@ export default function Tracking() {
                     return (
                       <div
                         key={step.key}
-                        className={`stepper-node-item ${isCompleted ? 'completed' : ''} ${
-                          isCurrent ? 'active' : ''
-                        }`}
+                        className={`stepper-node-item ${isCompleted ? 'completed' : ''} ${isCurrent ? 'active' : ''
+                          }`}
                       >
                         <div className="stepper-node-icon-wrapper">
                           <Icon size={20} />
@@ -574,12 +448,12 @@ export default function Tracking() {
                   <p className="detail-box-val">
                     {currentOrder.created_at
                       ? new Date(currentOrder.created_at).toLocaleDateString('es-CO', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })
                       : 'Reciente'}
                   </p>
                 </div>
@@ -591,10 +465,10 @@ export default function Tracking() {
                   <p className="detail-box-val">
                     {currentOrder.fecha_estimada
                       ? new Date(currentOrder.fecha_estimada).toLocaleDateString('es-CO', {
-                          weekday: 'short',
-                          month: 'short',
-                          day: 'numeric',
-                        })
+                        weekday: 'short',
+                        month: 'short',
+                        day: 'numeric',
+                      })
                       : '1 a 3 días hábiles'}
                   </p>
                 </div>
@@ -677,20 +551,10 @@ export default function Tracking() {
               <PackageOpen size={48} className="empty-icon" />
               <h3>No se encontró el pedido</h3>
               <p>
-                No encontramos ningún pedido registrado con el código <strong>"{searchInput}"</strong>. Verifica que el código esté bien escrito o prueba con los códigos de demostración <strong>MCS-101</strong>, <strong>MCS-102</strong>, <strong>MCS-103</strong> o <strong>MCS-104</strong>.
+                No encontramos ningún pedido registrado con el código <strong>"{searchInput}"</strong>. Verifica que el código esté bien escrito e intenta nuevamente.
               </p>
               <div className="empty-actions">
-                <button
-                  type="button"
-                  className="btn-rose btn-sm"
-                  onClick={() => {
-                    setSearchInput('MCS-101')
-                    handleSearch('MCS-101')
-                  }}
-                >
-                  Probar con MCS-101
-                </button>
-                <Link to="/catalogo" className="btn-outline btn-sm">
+                <Link to="/catalogo" className="btn-rose btn-sm">
                   Ir al Catálogo
                 </Link>
               </div>
