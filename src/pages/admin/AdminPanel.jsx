@@ -306,53 +306,76 @@ export default function AdminPanel() {
     }
 
     setSavingProduct(true)
+
+    // Payload de datos seguro
     const productPayload = {
       nombre: productFormData.nombre.trim(),
       categoria: productFormData.categoria,
       precio: Number(productFormData.precio),
       descripcion: productFormData.descripcion.trim(),
       imagen_url: productFormData.imagen_url.trim() || 'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=400',
-      stock: Number(productFormData.stock) || 100,
       activo: Boolean(productFormData.activo),
+    }
+
+    // Incluimos stock opcionalmente por si existe la columna
+    if (productFormData.stock !== undefined && productFormData.stock !== null) {
+      productPayload.stock = Number(productFormData.stock)
     }
 
     try {
       if (productFormData.id) {
         // Actualizar producto existente
-        const { data, error } = await supabase
+        let { data, error } = await supabase
           .from('productos')
           .update(productPayload)
           .eq('id', productFormData.id)
           .select()
-          .single()
+
+        // Si falla por la columna stock, intentamos sin el campo stock
+        if (error && error.code === 'PGRST204' && error.message?.includes('stock')) {
+          delete productPayload.stock
+          const retry = await supabase
+            .from('productos')
+            .update(productPayload)
+            .eq('id', productFormData.id)
+            .select()
+          data = retry.data
+          error = retry.error
+        }
 
         if (error) {
           console.error('Error actualizando producto en Supabase:', error)
           addToast('Error al actualizar: ' + error.message, 'error')
         } else {
-          setProducts((prev) =>
-            prev.map((p) => (p.id === productFormData.id ? (data || { ...p, ...productPayload }) : p))
-          )
           addToast('Producto actualizado exitosamente', 'success')
           setShowProductModal(false)
-          loadAllData() // Recargar datos para sincronizar
+          loadAllData()
         }
       } else {
         // Crear nuevo producto
-        const { data, error } = await supabase
+        let { data, error } = await supabase
           .from('productos')
           .insert([productPayload])
           .select()
-          .single()
+
+        // Si falla por la columna stock, reintentamos sin enviar stock
+        if (error && error.code === 'PGRST204' && error.message?.includes('stock')) {
+          delete productPayload.stock
+          const retry = await supabase
+            .from('productos')
+            .insert([productPayload])
+            .select()
+          data = retry.data
+          error = retry.error
+        }
 
         if (error) {
           console.error('Error creando producto en Supabase:', error)
           addToast('Error al crear producto: ' + error.message, 'error')
         } else {
-          setProducts((prev) => [...prev, data || { id: Date.now(), ...productPayload }])
           addToast('Producto añadido al catálogo con éxito', 'success')
           setShowProductModal(false)
-          loadAllData() // Recargar datos para sincronizar
+          loadAllData()
         }
       }
     } catch (err) {
