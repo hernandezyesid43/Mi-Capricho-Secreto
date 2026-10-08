@@ -33,7 +33,10 @@ import {
   AlertCircle,
   Check,
   ExternalLink,
-  ArrowRight
+  ArrowRight,
+  Upload,
+  Loader2,
+  Image as ImageIcon
 } from 'lucide-react'
 import { supabase } from '../../services/supabase'
 import { useAuthStore } from '../../store/authStore'
@@ -98,6 +101,7 @@ export default function AdminPanel() {
   const [showProductModal, setShowProductModal] = useState(false)
   const [productFormData, setProductFormData] = useState(DEFAULT_PRODUCT_FORM)
   const [savingProduct, setSavingProduct] = useState(false)
+  const [uploadingImage, setUploadingImage] = useState(false)
 
   const [showUserModal, setShowUserModal] = useState(false)
   const [userFormData, setUserFormData] = useState(DEFAULT_USER_FORM)
@@ -128,43 +132,7 @@ export default function AdminPanel() {
       if (!ordersError && ordersData) {
         setOrders(ordersData)
       } else {
-        // Fallback de demostración si la tabla está vacía
-        setOrders([
-          {
-            id: 'MCS-101',
-            tracking_code: 'MCS-101',
-            created_at: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-            estado: 'Pendiente',
-            total: 36000,
-            direccion: 'Cra 15 # 85-30, Apto 402, Bogotá',
-            perfiles: { nombre: 'Camila Rodríguez', telefono: '3109876543' },
-            pedido_items: [
-              {
-                id: 1,
-                cantidad: 2,
-                precio_unitario: 14000,
-                productos: { nombre: 'Yogur Griego Frutos Rojos', imagen_url: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=200' }
-              }
-            ]
-          },
-          {
-            id: 'MCS-102',
-            tracking_code: 'MCS-102',
-            created_at: new Date(Date.now() - 90 * 60 * 1000).toISOString(),
-            estado: 'En Preparación',
-            total: 26000,
-            direccion: 'Calle 116 # 9-45, Bogotá',
-            perfiles: { nombre: 'Andrés Morales', telefono: '3123456789' },
-            pedido_items: [
-              {
-                id: 2,
-                cantidad: 2,
-                precio_unitario: 13000,
-                productos: { nombre: 'Yogur Casero Maracuyá', imagen_url: 'https://images.unsplash.com/photo-1505253716362-afaea1d3d1af?w=200' }
-              }
-            ]
-          }
-        ])
+        setOrders([])
       }
 
       // 2. Cargar Productos
@@ -243,8 +211,43 @@ export default function AdminPanel() {
   }, [orders, orderSearch, orderStatusFilter])
 
   /* =========================================================
-     2. GESTIÓN DE INVENTARIO Y PRODUCTOS (CRUD)
+     2. GESTIÓN DE INVENTARIO, PRODUCTOS Y SUBIDA DE IMÁGENES
      ========================================================= */
+  const handleImageUpload = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setUploadingImage(true)
+
+    try {
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
+      const filePath = `${fileName}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('productos')
+        .upload(filePath, file)
+
+      if (uploadError) throw uploadError
+
+      const { data } = supabase.storage
+        .from('productos')
+        .getPublicUrl(filePath)
+
+      setProductFormData((prev) => ({
+        ...prev,
+        imagen_url: data.publicUrl
+      }))
+
+      addToast('Imagen subida con éxito', 'success')
+    } catch (error) {
+      console.error('Error al subir imagen:', error)
+      addToast('Error al subir la imagen. Revisa los permisos del bucket.', 'error')
+    } finally {
+      setUploadingImage(false)
+    }
+  }
+
   const handleToggleProductActive = async (productId, currentActive) => {
     const nextActive = !currentActive
     setProducts((prev) =>
@@ -309,9 +312,7 @@ export default function AdminPanel() {
       categoria: productFormData.categoria,
       precio: Number(productFormData.precio),
       descripcion: productFormData.descripcion.trim(),
-      imagen_url:
-        productFormData.imagen_url.trim() ||
-        'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=400',
+      imagen_url: productFormData.imagen_url.trim(),
       stock: Number(productFormData.stock) || 100,
       activo: Boolean(productFormData.activo),
     }
@@ -605,7 +606,7 @@ export default function AdminPanel() {
                 <Search size={18} className="search-box-icon" />
                 <input
                   type="text"
-                  placeholder="Buscar por código (#MCS-101) o cliente..."
+                  placeholder="Buscar por código o cliente..."
                   value={orderSearch}
                   onChange={(e) => setOrderSearch(e.target.value)}
                   className="admin-search-input"
@@ -653,11 +654,11 @@ export default function AdminPanel() {
                       const phone = ord.perfiles?.telefono || 'Sin teléfono'
                       const dateStr = ord.created_at
                         ? new Date(ord.created_at).toLocaleDateString('es-CO', {
-                            month: 'short',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })
+                          month: 'short',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })
                         : 'Reciente'
 
                       return (
@@ -1012,7 +1013,7 @@ export default function AdminPanel() {
         )}
       </AnimatePresence>
 
-      {/* MODAL 2: CREAR / EDITAR PRODUCTO */}
+      {/* MODAL 2: CREAR / EDITAR PRODUCTO (CON SUBIDA DE IMAGEN STORAGE) */}
       <AnimatePresence>
         {showProductModal && (
           <motion.div
@@ -1092,12 +1093,54 @@ export default function AdminPanel() {
                   />
                 </div>
 
+                {/* CAMPO DE IMAGEN CON CÁRGA DIRECTA Y VISTA PREVIA */}
                 <div className="form-group">
-                  <label className="form-input-label">URL de Imagen</label>
+                  <label className="form-input-label">Imagen del Producto</label>
+
+                  <div className="flex items-center gap-4 mt-1">
+                    {productFormData.imagen_url ? (
+                      <img
+                        src={productFormData.imagen_url}
+                        alt="Vista previa"
+                        style={{ width: '64px', height: '64px', objectFit: 'cover', borderRadius: '8px', border: '1px solid #e5e7eb' }}
+                      />
+                    ) : (
+                      <div style={{ width: '64px', height: '64px', backgroundColor: '#f3f4f6', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af', border: '1px dashed #cbd5e1' }}>
+                        <ImageIcon size={24} />
+                      </div>
+                    )}
+
+                    <label
+                      className="btn-outline cursor-pointer"
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '8px 14px', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '14px', fontWeight: '500' }}
+                    >
+                      {uploadingImage ? (
+                        <>
+                          <Loader2 className="spin-icon" size={16} />
+                          <span>Subiendo imagen...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Upload size={16} />
+                          <span>{productFormData.imagen_url ? 'Cambiar Foto' : 'Subir foto desde PC'}</span>
+                        </>
+                      )}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        style={{ display: 'none' }}
+                        onChange={handleImageUpload}
+                        disabled={uploadingImage}
+                      />
+                    </label>
+                  </div>
+
+                  {/* Input opcional por si deseas ajustar la URL manualmente */}
                   <input
                     type="url"
-                    placeholder="https://images.unsplash.com/photo-..."
+                    placeholder="O pega una URL directamente..."
                     className="form-input-field"
+                    style={{ marginTop: '8px', fontSize: '12px' }}
                     value={productFormData.imagen_url}
                     onChange={(e) => setProductFormData({ ...productFormData, imagen_url: e.target.value })}
                   />
@@ -1130,7 +1173,7 @@ export default function AdminPanel() {
                 <button
                   type="submit"
                   className="btn-rose"
-                  disabled={savingProduct}
+                  disabled={savingProduct || uploadingImage}
                   style={{ width: '100%', marginTop: '12px' }}
                 >
                   {savingProduct ? (
