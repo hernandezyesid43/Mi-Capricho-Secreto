@@ -83,7 +83,7 @@ export default function AdminPanel() {
   const navigate = useNavigate()
 
   // Navegación de Pestañas
-  const [activeTab, setActiveTab] = useState('orders') // 'orders', 'inventory', 'users', 'metrics'
+  const [activeTab, setActiveTab] = useState('orders') // 'orders', 'inventory', 'users'
   const [loading, setLoading] = useState(true)
 
   // Datos principales
@@ -166,7 +166,6 @@ export default function AdminPanel() {
      1. GESTIÓN Y ACTUALIZACIÓN DE PEDIDOS (TIEMPO REAL)
      ========================================================= */
   const handleUpdateOrderStatus = async (orderId, newStatus) => {
-    // Actualización optimista
     setOrders((prev) =>
       prev.map((o) =>
         o.id === orderId || o.tracking_code === orderId ? { ...o, estado: newStatus } : o
@@ -211,7 +210,7 @@ export default function AdminPanel() {
   }, [orders, orderSearch, orderStatusFilter])
 
   /* =========================================================
-     2. GESTIÓN DE INVENTARIO, PRODUCTOS Y SUBIDA DE IMÁGENES
+     2. GESTIÓN DE INVENTARIO Y PRODUCTOS
      ========================================================= */
   const handleImageUpload = async (e) => {
     const file = e.target.files?.[0]
@@ -267,7 +266,7 @@ export default function AdminPanel() {
         addToast('Error al actualizar disponibilidad: ' + error.message, 'error')
       } else {
         addToast(
-          nextActive ? 'Producto activado en catálogo' : 'Producto pausado (agotado/no visible)',
+          nextActive ? 'Producto activado en catálogo' : 'Producto pausado',
           'success'
         )
       }
@@ -312,14 +311,13 @@ export default function AdminPanel() {
       categoria: productFormData.categoria,
       precio: Number(productFormData.precio),
       descripcion: productFormData.descripcion.trim(),
-      imagen_url: productFormData.imagen_url.trim(),
+      imagen_url: productFormData.imagen_url.trim() || 'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=400',
       stock: Number(productFormData.stock) || 100,
       activo: Boolean(productFormData.activo),
     }
 
     try {
       if (productFormData.id) {
-        // Actualizar
         const { data, error } = await supabase
           .from('productos')
           .update(productPayload)
@@ -337,7 +335,6 @@ export default function AdminPanel() {
           setShowProductModal(false)
         }
       } else {
-        // Crear
         const { data, error } = await supabase
           .from('productos')
           .insert(productPayload)
@@ -441,14 +438,12 @@ export default function AdminPanel() {
     const totalRevenue = orders.reduce((acc, o) => acc + (Number(o.total) || 0), 0)
     const pendingOrders = orders.filter((o) => o.estado === 'Pendiente' || o.estado === 'Recibido').length
     const preparingOrders = orders.filter((o) => o.estado === 'En Preparación' || o.estado === 'En preparación').length
-    const completedOrders = orders.filter((o) => o.estado === 'Entregado').length
 
     return {
       totalRevenue,
       totalOrders: orders.length,
       pendingOrders,
       preparingOrders,
-      completedOrders,
       totalProducts: products.length,
       activeProducts: products.filter((p) => p.activo !== false).length,
       totalUsers: usersList.length,
@@ -474,7 +469,7 @@ export default function AdminPanel() {
       <div className="admin-ambient-glow" />
 
       <div className="admin-container">
-        {/* Header Superior del Panel */}
+        {/* Header Superior */}
         <div className="admin-top-header">
           <div className="admin-title-area">
             <span className="admin-badge">
@@ -511,7 +506,7 @@ export default function AdminPanel() {
           </div>
         </div>
 
-        {/* Tarjetas KPI de Resumen */}
+        {/* Tarjetas KPI */}
         <div className="admin-kpi-grid">
           <div className="kpi-card">
             <div className="kpi-icon revenue">
@@ -558,7 +553,7 @@ export default function AdminPanel() {
           </div>
         </div>
 
-        {/* Pestañas de Navegación del Panel */}
+        {/* Pestañas de Navegación */}
         <div className="admin-nav-tabs">
           <button
             type="button"
@@ -591,7 +586,7 @@ export default function AdminPanel() {
           </button>
         </div>
 
-        {/* CONTENIDO 1: GESTIÓN DE PEDIDOS */}
+        {/* CONTENIDO 1: PEDIDOS */}
         {activeTab === 'orders' && (
           <motion.div
             key="tab-orders"
@@ -600,7 +595,6 @@ export default function AdminPanel() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
           >
-            {/* Barra de Filtros de Pedidos */}
             <div className="admin-filter-bar">
               <div className="admin-search-input-box">
                 <Search size={18} className="search-box-icon" />
@@ -627,7 +621,6 @@ export default function AdminPanel() {
               </div>
             </div>
 
-            {/* Tabla / Lista de Pedidos */}
             {filteredOrders.length === 0 ? (
               <div className="admin-empty-state">
                 <ShoppingBag size={44} className="empty-icon" />
@@ -729,7 +722,7 @@ export default function AdminPanel() {
           </motion.div>
         )}
 
-        {/* CONTENIDO 2: GESTIÓN DE INVENTARIO */}
+        {/* CONTENIDO 2: INVENTARIO */}
         {activeTab === 'inventory' && (
           <motion.div
             key="tab-inventory"
@@ -774,7 +767,6 @@ export default function AdminPanel() {
               </div>
             </div>
 
-            {/* Grid / Tabla de Productos */}
             {filteredProducts.length === 0 ? (
               <div className="admin-empty-state">
                 <Package size={44} className="empty-icon" />
@@ -863,7 +855,7 @@ export default function AdminPanel() {
           </motion.div>
         )}
 
-        {/* CONTENIDO 3: GESTIÓN DE USUARIOS Y ROLES */}
+        {/* CONTENIDO 3: USUARIOS */}
         {activeTab === 'users' && (
           <motion.div
             key="tab-users"
@@ -918,7 +910,7 @@ export default function AdminPanel() {
         )}
       </div>
 
-      {/* MODAL 1: DETALLES DEL PEDIDO SELECCIONADO */}
+      {/* MODAL 1: DETALLES DE PEDIDO */}
       <AnimatePresence>
         {selectedOrderDetails && (
           <motion.div
@@ -978,7 +970,6 @@ export default function AdminPanel() {
                 </div>
               </div>
 
-              {/* Items del pedido */}
               <div className="modal-items-section">
                 <h4><ShoppingBag size={16} /> Productos Solicitados</h4>
                 <div className="modal-items-list">
@@ -1013,7 +1004,7 @@ export default function AdminPanel() {
         )}
       </AnimatePresence>
 
-      {/* MODAL 2: CREAR / EDITAR PRODUCTO (CON SUBIDA DE IMAGEN STORAGE) */}
+      {/* MODAL 2: CREAR / EDITAR PRODUCTO */}
       <AnimatePresence>
         {showProductModal && (
           <motion.div
@@ -1093,7 +1084,7 @@ export default function AdminPanel() {
                   />
                 </div>
 
-                {/* CAMPO DE IMAGEN CON CÁRGA DIRECTA Y VISTA PREVIA */}
+                {/* IMAGEN CON SUBIDA Y VISTA PREVIA */}
                 <div className="form-group">
                   <label className="form-input-label">Imagen del Producto</label>
 
@@ -1135,7 +1126,6 @@ export default function AdminPanel() {
                     </label>
                   </div>
 
-                  {/* Input opcional por si deseas ajustar la URL manualmente */}
                   <input
                     type="url"
                     placeholder="O pega una URL directamente..."
@@ -1188,7 +1178,7 @@ export default function AdminPanel() {
         )}
       </AnimatePresence>
 
-      {/* MODAL 3: EDITAR USUARIO Y ROL */}
+      {/* MODAL 3: EDITAR USUARIO */}
       <AnimatePresence>
         {showUserModal && (
           <motion.div
