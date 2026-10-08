@@ -318,40 +318,46 @@ export default function AdminPanel() {
 
     try {
       if (productFormData.id) {
+        // Actualizar producto existente
         const { data, error } = await supabase
           .from('productos')
           .update(productPayload)
           .eq('id', productFormData.id)
           .select()
-          .maybeSingle()
+          .single()
 
         if (error) {
+          console.error('Error actualizando producto en Supabase:', error)
           addToast('Error al actualizar: ' + error.message, 'error')
         } else {
           setProducts((prev) =>
-            prev.map((p) => (p.id === productFormData.id ? data || { ...p, ...productPayload } : p))
+            prev.map((p) => (p.id === productFormData.id ? (data || { ...p, ...productPayload }) : p))
           )
           addToast('Producto actualizado exitosamente', 'success')
           setShowProductModal(false)
+          loadAllData() // Recargar datos para sincronizar
         }
       } else {
+        // Crear nuevo producto
         const { data, error } = await supabase
           .from('productos')
-          .insert(productPayload)
+          .insert([productPayload])
           .select()
-          .maybeSingle()
+          .single()
 
         if (error) {
+          console.error('Error creando producto en Supabase:', error)
           addToast('Error al crear producto: ' + error.message, 'error')
         } else {
           setProducts((prev) => [...prev, data || { id: Date.now(), ...productPayload }])
           addToast('Producto añadido al catálogo con éxito', 'success')
           setShowProductModal(false)
+          loadAllData() // Recargar datos para sincronizar
         }
       }
     } catch (err) {
-      console.warn('Error guardando producto:', err)
-      addToast('Error de conexión al guardar producto', 'error')
+      console.error('Excepción guardando producto:', err)
+      addToast('Error inesperado al guardar el producto', 'error')
     } finally {
       setSavingProduct(false)
     }
