@@ -7,6 +7,8 @@ import FloatingCart from './components/layout/FloatingCart'
 import ToastContainer from './components/ui/ToastContainer'
 import Home from './pages/public/Home'
 import Catalog from './pages/public/Catalog'
+import Privacidad from './pages/public/Privacidad'
+import Terminos from './pages/public/Terminos'
 import Profile from './pages/customer/Profile'
 import Tracking from './pages/customer/Tracking'
 import AdminPanel from './pages/admin/AdminPanel'
@@ -20,6 +22,8 @@ function AnimatedRoutes() {
       <Routes location={location} key={location.pathname}>
         <Route path="/" element={<Home />} />
         <Route path="/catalogo" element={<Catalog />} />
+        <Route path="/privacidad" element={<Privacidad />} />
+        <Route path="/terminos" element={<Terminos />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/auth" element={<LoginPage />} />
         <Route path="/perfil" element={<Profile />} />
