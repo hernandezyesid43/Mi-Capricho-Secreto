@@ -13,6 +13,7 @@ import Profile from './pages/customer/Profile'
 import Tracking from './pages/customer/Tracking'
 import AdminPanel from './pages/admin/AdminPanel'
 import LoginPage from './pages/auth/LoginPage'
+import Footer from './components/Footer'
 
 function AnimatedRoutes() {
   const location = useLocation()
@@ -53,10 +54,23 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <PremiumHeader />
-      <FloatingCart />
-      <ToastContainer />
-      <AnimatedRoutes />
+      {/* Contenedor principal flex que ocupa al menos el 100% del alto de la pantalla */}
+      <div className="flex flex-col min-h-screen">
+
+        {/* Componentes globales que flotan o van arriba */}
+        <PremiumHeader />
+        <FloatingCart />
+        <ToastContainer />
+
+        {/* Este main con "flex-grow" es la magia: crece para ocupar todo el espacio disponible, empujando el Footer hacia abajo */}
+        <main className="flex-grow flex flex-col relative">
+          <AnimatedRoutes />
+        </main>
+
+        {/* El Footer al final del contenedor principal */}
+        <Footer />
+
+      </div>
     </BrowserRouter>
   )
 }
