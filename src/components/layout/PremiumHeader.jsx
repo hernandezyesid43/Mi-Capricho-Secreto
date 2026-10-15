@@ -29,6 +29,15 @@ export default function PremiumHeader() {
     }
   }
 
+  const handleLogout = async () => {
+    try {
+      await signOut()
+      navigate('/')
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error)
+    }
+  }
+
   return (
     <>
       <header
@@ -70,29 +79,56 @@ export default function PremiumHeader() {
 
         <div className="header-icons">
           {user ? (
-            <Link
-              to="/perfil"
-              className="header-account-btn"
-              title="Mi Cuenta"
-              id="header-account-btn"
-            >
-              <User size={18} />
-              <span className="account-text">
-                {profile?.nombre ? profile.nombre.split(' ')[0] : 'Mi Cuenta'}
-              </span>
-            </Link>
+            <div className="header-user-menu" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              {/* Botón Mi Cuenta / Perfil */}
+              <Link
+                to="/perfil"
+                className="header-account-btn"
+                title="Mi Cuenta"
+                id="header-account-btn"
+              >
+                <User size={18} />
+                <span className="account-text">
+                  {profile?.nombre ? profile.nombre.split(' ')[0] : 'Mi Cuenta'}
+                </span>
+              </Link>
+
+              {/* Botón Cerrar Sesión Directo */}
+              <button
+                onClick={handleLogout}
+                className="header-logout-btn"
+                title="Cerrar Sesión"
+                id="header-logout-btn"
+                aria-label="Cerrar Sesión"
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'inherit',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '8px',
+                  borderRadius: '50%',
+                  transition: 'background-color 0.2s ease',
+                }}
+              >
+                <LogOut size={18} />
+              </button>
+            </div>
           ) : (
-            <Link
-              to="/login"
+            <button
+              onClick={handleProfileClick}
               className="header-account-btn"
               title="Iniciar Sesión / Mi Cuenta"
               id="header-login-btn"
             >
               <User size={18} />
               <span className="account-text">Iniciar Sesión</span>
-            </Link>
+            </button>
           )}
 
+          {/* Botón del Carrito */}
           <button
             className="header-cart-btn"
             onClick={toggleCart}
@@ -105,6 +141,9 @@ export default function PremiumHeader() {
           </button>
         </div>
       </header>
+
+      {/* Modal de Autenticación si se activa de forma flotante */}
+      {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
     </>
   );
 }
