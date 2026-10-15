@@ -87,6 +87,7 @@ export default function AnimatedProductCard({ product, index }) {
           <p className="product-card-price">
             ${Number(product.precio).toLocaleString('es-CO')}
             <small> COP</small>
+            <small className="text-gray-500 font-normal"> / {product.presentacion || 'Unidad'}</small>
           </p>
           <div className="product-card-actions">
             <button
