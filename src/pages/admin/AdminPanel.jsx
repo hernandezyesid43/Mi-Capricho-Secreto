@@ -36,11 +36,13 @@ import {
   ArrowRight,
   Upload,
   Loader2,
+  RotateCcw,
   Image as ImageIcon
 } from 'lucide-react'
 import { supabase } from '../../services/supabase'
 import { useAuthStore } from '../../store/authStore'
 import { useToastStore } from '../../components/ui/ToastContainer'
+import { deleteOrderById, resetAllOrdersAndCounter } from '../../services/dataService'
 
 const CATEGORIES = [
   'Todos',
@@ -129,10 +131,12 @@ export default function AdminPanel() {
         .select('*, perfiles(nombre, telefono, direccion), pedido_items(*, productos(*))')
         .order('created_at', { ascending: false })
 
-      if (!ordersError && ordersData) {
+      if (!ordersError && ordersData && ordersData.length > 0) {
         setOrders(ordersData)
       } else {
-        setOrders([])
+        // Carga de respaldo local si no hay datos en Supabase
+        const { getStoredOrders } = await import('../../services/dataService')
+        setOrders(getStoredOrders())
       }
 
       // 2. Cargar Productos
@@ -163,16 +167,23 @@ export default function AdminPanel() {
   }
 
   /* =========================================================
-     1. GESTIÓN Y ACTUALIZACIÓN DE PEDIDOS (TIEMPO REAL)
+     1. GESTIÓN, ELIMINACIÓN Y REINICIO DE PEDIDOS
      ========================================================= */
   const handleUpdateOrderStatus = async (orderId, newStatus) => {
     setOrders((prev) =>
       prev.map((o) =>
-        o.id === orderId || o.tracking_code === orderId ? { ...o, estado: newStatus } : o
+        o.id === orderId || o.tracking_code === orderId || o.codigo_orden === orderId
+          ? { ...o, estado: newStatus }
+          : o
       )
     )
 
-    if (selectedOrderDetails && (selectedOrderDetails.id === orderId || selectedOrderDetails.tracking_code === orderId)) {
+    if (
+      selectedOrderDetails &&
+      (selectedOrderDetails.id === orderId ||
+        selectedOrderDetails.tracking_code === orderId ||
+        selectedOrderDetails.codigo_orden === orderId)
+    ) {
       setSelectedOrderDetails((prev) => ({ ...prev, estado: newStatus }))
     }
 
@@ -185,17 +196,65 @@ export default function AdminPanel() {
       if (error) {
         addToast('Error al actualizar en Supabase: ' + error.message, 'error')
       } else {
-        addToast(`Pedido #${orderId} actualizado a "${newStatus}"`, 'success')
+        addToast(`Pedido actualizado a "${newStatus}"`, 'success')
       }
     } catch (err) {
       console.warn('Error sincronizando con Supabase:', err)
     }
   }
 
+  // Eliminar un pedido individual
+  const handleDeleteSingleOrder = async (orderId) => {
+    if (!window.confirm('¿Estás seguro de que deseas eliminar este pedido?')) {
+      return
+    }
+
+    // Actualizar estado UI
+    setOrders((prev) => prev.filter((o) => o.id !== orderId && o.codigo_orden !== orderId && o.tracking_code !== orderId))
+    if (selectedOrderDetails?.id === orderId) {
+      setSelectedOrderDetails(null)
+    }
+
+    // Eliminar localmente
+    deleteOrderById(orderId)
+
+    // Eliminar en Supabase
+    try {
+      const { error } = await supabase.from('pedidos').delete().eq('id', orderId)
+      if (error) {
+        console.warn('No se pudo borrar en Supabase (tal vez era una orden local):', error.message)
+      }
+      addToast('Pedido eliminado correctamente', 'info')
+    } catch (err) {
+      console.error('Error eliminando pedido:', err)
+    }
+  }
+
+  // Vaciar todos los pedidos y reiniciar el contador
+  const handleResetAllOrders = async () => {
+    const confirmacion = window.confirm(
+      '⚠️ ¿DESEAS REINICIAR TODO EL SISTEMA DE PEDIDOS?\n\nEsto eliminará todos los pedidos de prueba y reiniciará el número de seguimiento.'
+    )
+    if (!confirmacion) return
+
+    // Limpiar estado UI y local
+    setOrders([])
+    resetAllOrdersAndCounter()
+
+    // Intentar vaciar en Supabase si se utiliza esa tabla
+    try {
+      const { error } = await supabase.from('pedidos').delete().neq('id', 0)
+      if (error) console.warn('Aviso Supabase reset:', error.message)
+      addToast('Sistema de pedidos reiniciado. El contador ha vuelto a cero.', 'success')
+    } catch (err) {
+      console.error('Error al resetear Supabase:', err)
+    }
+  }
+
   const filteredOrders = useMemo(() => {
     return orders.filter((o) => {
-      const code = (o.id || o.tracking_code || '').toLowerCase()
-      const clientName = (o.perfiles?.nombre || '').toLowerCase()
+      const code = (o.codigo_orden || o.id || o.tracking_code || '').toString().toLowerCase()
+      const clientName = (o.cliente_nombre || o.perfiles?.nombre || '').toLowerCase()
       const searchMatch =
         !orderSearch.trim() ||
         code.includes(orderSearch.toLowerCase()) ||
@@ -307,7 +366,6 @@ export default function AdminPanel() {
 
     setSavingProduct(true)
 
-    // Payload de datos seguro
     const productPayload = {
       nombre: productFormData.nombre.trim(),
       categoria: productFormData.categoria,
@@ -317,21 +375,18 @@ export default function AdminPanel() {
       activo: Boolean(productFormData.activo),
     }
 
-    // Incluimos stock opcionalmente por si existe la columna
     if (productFormData.stock !== undefined && productFormData.stock !== null) {
       productPayload.stock = Number(productFormData.stock)
     }
 
     try {
       if (productFormData.id) {
-        // Actualizar producto existente
         let { data, error } = await supabase
           .from('productos')
           .update(productPayload)
           .eq('id', productFormData.id)
           .select()
 
-        // Si falla por la columna stock, intentamos sin el campo stock
         if (error && error.code === 'PGRST204' && error.message?.includes('stock')) {
           delete productPayload.stock
           const retry = await supabase
@@ -352,13 +407,11 @@ export default function AdminPanel() {
           loadAllData()
         }
       } else {
-        // Crear nuevo producto
         let { data, error } = await supabase
           .from('productos')
           .insert([productPayload])
           .select()
 
-        // Si falla por la columna stock, reintentamos sin enviar stock
         if (error && error.code === 'PGRST204' && error.message?.includes('stock')) {
           delete productPayload.stock
           const retry = await supabase
@@ -511,6 +564,18 @@ export default function AdminPanel() {
           </div>
 
           <div className="admin-top-actions">
+            {/* BOTÓN REINICIAR PEDIDOS */}
+            <button
+              type="button"
+              className="btn-refresh-admin"
+              onClick={handleResetAllOrders}
+              title="Eliminar todas las órdenes y reiniciar contador"
+              style={{ backgroundColor: '#fff0f3', color: '#c02e62', borderColor: '#fecdd3' }}
+            >
+              <RotateCcw size={16} />
+              <span>Reiniciar Pedidos</span>
+            </button>
+
             <button
               type="button"
               className="btn-refresh-admin"
@@ -520,6 +585,7 @@ export default function AdminPanel() {
               <RefreshCw size={16} className={loading ? 'spin-icon' : ''} />
               <span>Actualizar</span>
             </button>
+
             <button
               type="button"
               className="btn-logout-admin"
@@ -671,9 +737,9 @@ export default function AdminPanel() {
                   </thead>
                   <tbody>
                     {filteredOrders.map((ord) => {
-                      const code = ord.id || ord.tracking_code
-                      const client = ord.perfiles?.nombre || 'Cliente Anónimo'
-                      const phone = ord.perfiles?.telefono || 'Sin teléfono'
+                      const code = ord.codigo_orden || ord.id || ord.tracking_code
+                      const client = ord.cliente_nombre || ord.perfiles?.nombre || 'Cliente Anónimo'
+                      const phone = ord.cliente_telefono || ord.perfiles?.telefono || 'Sin teléfono'
                       const dateStr = ord.created_at
                         ? new Date(ord.created_at).toLocaleDateString('es-CO', {
                           month: 'short',
@@ -684,7 +750,7 @@ export default function AdminPanel() {
                         : 'Reciente'
 
                       return (
-                        <tr key={ord.id} className="admin-table-row">
+                        <tr key={ord.id || code} className="admin-table-row">
                           <td>
                             <div className="order-id-cell">
                               <span className="order-code-badge">#{code}</span>
@@ -739,6 +805,15 @@ export default function AdminPanel() {
                               >
                                 <ExternalLink size={16} />
                               </Link>
+                              {/* BOTÓN ELIMINAR PEDIDO INDIVIDUAL */}
+                              <button
+                                type="button"
+                                className="btn-table-action delete"
+                                onClick={() => handleDeleteSingleOrder(ord.id)}
+                                title="Eliminar este pedido"
+                              >
+                                <Trash2 size={16} />
+                              </button>
                             </div>
                           </td>
                         </tr>
@@ -965,7 +1040,7 @@ export default function AdminPanel() {
 
               <div className="modal-header-badge">
                 <span className="order-code-badge">
-                  #{selectedOrderDetails.id || selectedOrderDetails.tracking_code}
+                  #{selectedOrderDetails.codigo_orden || selectedOrderDetails.id || selectedOrderDetails.tracking_code}
                 </span>
                 <span className={`status-pill ${selectedOrderDetails.estado?.toLowerCase().replace(/\s+/g, '')}`}>
                   {selectedOrderDetails.estado}
@@ -977,14 +1052,14 @@ export default function AdminPanel() {
               <div className="modal-details-grid">
                 <div className="modal-info-card">
                   <h4><Users size={16} /> Datos del Cliente</h4>
-                  <p><strong>Nombre:</strong> {selectedOrderDetails.perfiles?.nombre || 'No registrado'}</p>
-                  <p><strong>Teléfono:</strong> {selectedOrderDetails.perfiles?.telefono || 'No registrado'}</p>
-                  <p><strong>Dirección:</strong> {selectedOrderDetails.direccion || selectedOrderDetails.perfiles?.direccion || 'No registrada'}</p>
+                  <p><strong>Nombre:</strong> {selectedOrderDetails.cliente_nombre || selectedOrderDetails.perfiles?.nombre || 'No registrado'}</p>
+                  <p><strong>Teléfono:</strong> {selectedOrderDetails.cliente_telefono || selectedOrderDetails.perfiles?.telefono || 'No registrado'}</p>
+                  <p><strong>Dirección:</strong> {selectedOrderDetails.direccion_envio || selectedOrderDetails.direccion || selectedOrderDetails.perfiles?.direccion || 'No registrada'}</p>
                 </div>
 
                 <div className="modal-info-card">
                   <h4><Calendar size={16} /> Fecha & Estado</h4>
-                  <p><strong>Fecha Registro:</strong> {new Date(selectedOrderDetails.created_at).toLocaleString('es-CO')}</p>
+                  <p><strong>Fecha Registro:</strong> {selectedOrderDetails.created_at ? new Date(selectedOrderDetails.created_at).toLocaleString('es-CO') : 'Reciente'}</p>
                   <div className="modal-status-selector">
                     <label>Cambiar Estado:</label>
                     <select
@@ -1002,13 +1077,13 @@ export default function AdminPanel() {
               <div className="modal-items-section">
                 <h4><ShoppingBag size={16} /> Productos Solicitados</h4>
                 <div className="modal-items-list">
-                  {selectedOrderDetails.pedido_items?.map((it, i) => {
+                  {(selectedOrderDetails.items || selectedOrderDetails.pedido_items)?.map((it, i) => {
                     const prod = it.productos || it
                     return (
                       <div key={i} className="modal-item-row">
                         <img
                           src={prod.imagen_url || 'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=100'}
-                          alt={prod.nombre}
+                          alt={prod.nombre || it.nombre}
                           className="modal-item-thumb"
                         />
                         <div className="modal-item-info">

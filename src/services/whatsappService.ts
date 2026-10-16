@@ -67,10 +67,17 @@ ${itemsList}
 ¿Me confirman para coordinar el pago y la entrega? ¡Mil gracias! 🙌`;
 }
 
+/**
+ * Desactivado la redirección automática en el checkout.
+ * Esta función ahora solo deja registrado en consola el payload
+ * para no interferir con la experiencia en la misma página.
+ */
 export function openWhatsAppCheckout(order: Order): void {
-  const message = formatWhatsAppMessage(order);
-  const url = buildWhatsAppUrl(WHATSAPP_PHONE, message);
-  window.open(url, '_blank', 'noopener,noreferrer');
+  console.log('Pedido procesado internamente en la web (WhatsApp checkout omitido):', order.codigo_orden);
+  // Si en el futuro quieres activar WhatsApp de nuevo, solo desmarcarías esta línea:
+  // const message = formatWhatsAppMessage(order);
+  // const url = buildWhatsAppUrl(WHATSAPP_PHONE, message);
+  // window.open(url, '_blank', 'noopener,noreferrer');
 }
 
 export function openGeneralWhatsApp(productName?: string): void {
@@ -85,4 +92,3 @@ export function getOrderTrackingWhatsAppUrl(order: Order): string {
   const message = `¡Hola! 👋🍓 Quería consultar cómo va mi pedido *#${order.codigo_orden}* a nombre de *${order.cliente_nombre}* (Estado actual en web: *${order.estado}*). ¡Muchas gracias! ✨`;
   return buildWhatsAppUrl(WHATSAPP_PHONE, message);
 }
-

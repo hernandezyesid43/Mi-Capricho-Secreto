@@ -244,7 +244,7 @@ export function saveOrders(orders: Order[]): void {
 
 export function createNewOrder(orderData: Omit<Order, 'id' | 'codigo_orden' | 'created_at' | 'updated_at'>): Order {
   const currentOrders = getStoredOrders();
-  const nextId = currentOrders.length > 0 ? Math.max(...currentOrders.map(o => o.id)) + 1 : 101;
+  const nextId = currentOrders.length > 0 ? Math.max(...currentOrders.map(o => typeof o.id === 'number' ? o.id : 100)) + 1 : 101;
   const newOrder: Order = {
     ...orderData,
     id: nextId,
@@ -258,10 +258,10 @@ export function createNewOrder(orderData: Omit<Order, 'id' | 'codigo_orden' | 'c
   return newOrder;
 }
 
-export function updateOrderStatus(orderId: number, newStatus: OrderStatus): void {
+export function updateOrderStatus(orderId: number | string, newStatus: OrderStatus): void {
   const current = getStoredOrders();
   const updated = current.map((order) => {
-    if (order.id === orderId) {
+    if (order.id === orderId || order.codigo_orden === orderId) {
       return {
         ...order,
         estado: newStatus,
@@ -273,10 +273,10 @@ export function updateOrderStatus(orderId: number, newStatus: OrderStatus): void
   saveOrders(updated);
 }
 
-export function toggleOrderPriority(orderId: number): void {
+export function toggleOrderPriority(orderId: number | string): void {
   const current = getStoredOrders();
   const updated = current.map((order) => {
-    if (order.id === orderId) {
+    if (order.id === orderId || order.codigo_orden === orderId) {
       return {
         ...order,
         prioridad: !order.prioridad,
@@ -286,6 +286,29 @@ export function toggleOrderPriority(orderId: number): void {
     return order;
   });
   saveOrders(updated);
+}
+
+// ----------------------------------------------------------------------
+// NUEVAS FUNCIONES PARA ELIMINACIÓN Y REINICIO DE PEDIDOS / CONTADORES
+// ----------------------------------------------------------------------
+
+/**
+ * Elimina un único pedido según su ID numérico o código de orden (ej. 'CAP-101')
+ */
+export function deleteOrderById(orderId: number | string): void {
+  const currentOrders = getStoredOrders();
+  const updated = currentOrders.filter(
+    (o) => o.id !== orderId && o.codigo_orden !== orderId
+  );
+  saveOrders(updated);
+}
+
+/**
+ * Vacía completamente la lista de pedidos y reinicia la secuencia de ordenamiento a cero.
+ */
+export function resetAllOrdersAndCounter(): void {
+  localStorage.setItem('capricho_orders_v1', JSON.stringify([]));
+  notifyChange();
 }
 
 // Product Management
@@ -361,4 +384,3 @@ export function saveFavorites(favorites: number[]): void {
   localStorage.setItem('capricho_favorites_v1', JSON.stringify(favorites));
   notifyChange();
 }
-
