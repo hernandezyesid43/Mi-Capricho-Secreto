@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { AnimatePresence } from 'framer-motion'
 import { useAuthStore } from './store/authStore'
@@ -14,8 +14,7 @@ import Tracking from './pages/customer/Tracking'
 import AdminPanel from './pages/admin/AdminPanel'
 import LoginPage from './pages/auth/LoginPage'
 import Footer from './components/Footer'
-import ScrollToTop from './components/ScrollToTop'  // ajusta la ruta
-
+import ScrollToTop from './components/ScrollToTop'
 
 function AnimatedRoutes() {
   const location = useLocation()
@@ -56,31 +55,19 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      {/* Contenedor principal flex que ocupa al menos el 100% del alto de la pantalla */}
-      <div className="flex flex-col min-h-screen">
+      <ScrollToTop />
 
-        {/* Componentes globales que flotan o van arriba */}
+      <div className="flex flex-col min-h-screen">
         <PremiumHeader />
         <FloatingCart />
         <ToastContainer />
 
-        {/* Este main con "flex-grow" es la magia: crece para ocupar todo el espacio disponible, empujando el Footer hacia abajo */}
         <main className="flex-grow flex flex-col relative">
           <AnimatedRoutes />
         </main>
 
-        {/* El Footer al final del contenedor principal */}
         <Footer />
-
       </div>
-    </BrowserRouter>
-  )
-}
-function App() {
-  return (
-    <BrowserRouter>
-      <ScrollToTop />   {/* ← agrégalo aquí */}
-      {/* el resto de tu app (Routes, Layout, etc.) */}
     </BrowserRouter>
   )
 }
