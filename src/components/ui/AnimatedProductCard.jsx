@@ -11,6 +11,7 @@ export default function AnimatedProductCard({ product, index }) {
   const addItem = useCartStore((s) => s.addItem)
   const openCart = useCartStore((s) => s.openCart)
   const [imgLoaded, setImgLoaded] = useState(false)
+  const [imgError, setImgError] = useState(false)
 
   const liked = user ? isFavorite(product.id) : false
 
@@ -26,7 +27,11 @@ export default function AnimatedProductCard({ product, index }) {
     openCart()
   }
 
-  const imageUrl = product.imagen_url || product.image || product.imagen || 'https://via.placeholder.com/400x400?text=Mi+Capricho+Secreto'
+  const imageUrl =
+    product.imagen_url ||
+    product.image ||
+    product.imagen ||
+    'https://via.placeholder.com/400x400?text=Mi+Capricho+Secreto'
 
   return (
     <motion.div
@@ -40,25 +45,42 @@ export default function AnimatedProductCard({ product, index }) {
         ease: [0.4, 0, 0.2, 1],
       }}
     >
-      <div className="product-card-image-wrapper">
-        {!imgLoaded && <div className="skeleton" style={{ height: 220, width: '100%' }} />}
+      <div className="product-card-image-wrapper" style={{ position: 'relative', height: 220, overflow: 'hidden' }}>
+        {/* Skeleton mientras carga */}
+        {!imgLoaded && !imgError && (
+          <div
+            className="skeleton"
+            style={{
+              position: 'absolute',
+              inset: 0,
+              height: 220,
+              width: '100%',
+              background: 'linear-gradient(90deg, #f3e8e8 25%, #faf4f0 50%, #f3e8e8 75%)',
+              backgroundSize: '200% 100%',
+            }}
+          />
+        )}
+
         <img
           className="product-card-image"
           src={imageUrl}
           alt={product.nombre}
           loading="lazy"
           onLoad={() => setImgLoaded(true)}
-          onError={(e) => {
-            e.target.src = 'https://via.placeholder.com/400x400?text=Mi+Capricho+Secreto'
+          onError={() => {
+            setImgError(true)
             setImgLoaded(true)
           }}
           style={{
-            display: imgLoaded ? 'block' : 'none',
+            display: 'block',                 // ← siempre visible
+            opacity: imgLoaded ? 1 : 0,       // ← solo controlamos opacidad
+            transition: 'opacity 0.3s ease',
             height: '220px',
             width: '100%',
-            objectFit: 'cover'
+            objectFit: 'cover',
           }}
         />
+
         <button
           className={`heart-toggle ${liked ? 'active' : ''}`}
           onClick={handleFavorite}
@@ -78,7 +100,7 @@ export default function AnimatedProductCard({ product, index }) {
             display: '-webkit-box',
             WebkitLineClamp: 2,
             WebkitBoxOrient: 'vertical',
-            overflow: 'hidden'
+            overflow: 'hidden',
           }}
         >
           {product.descripcion}
@@ -87,7 +109,10 @@ export default function AnimatedProductCard({ product, index }) {
           <p className="product-card-price">
             ${Number(product.precio).toLocaleString('es-CO')}
             <small> COP</small>
-            <small className="text-gray-500 font-normal"> / {product.presentacion || 'Unidad'}</small>
+            <small className="text-gray-500 font-normal">
+              {' '}
+              / {product.presentacion || 'Unidad'}
+            </small>
           </p>
           <div className="product-card-actions">
             <button
