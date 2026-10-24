@@ -16,14 +16,7 @@ import LoginPage from './pages/auth/LoginPage'
 import Footer from './components/Footer'
 import ScrollToTop from './components/ScrollToTop'  // ajusta la ruta
 
-function App() {
-  return (
-    <BrowserRouter>
-      <ScrollToTop />   {/* ← agrégalo aquí */}
-      {/* el resto de tu app (Routes, Layout, etc.) */}
-    </BrowserRouter>
-  )
-}
+
 function AnimatedRoutes() {
   const location = useLocation()
 
@@ -80,6 +73,14 @@ export default function App() {
         <Footer />
 
       </div>
+    </BrowserRouter>
+  )
+}
+function App() {
+  return (
+    <BrowserRouter>
+      <ScrollToTop />   {/* ← agrégalo aquí */}
+      {/* el resto de tu app (Routes, Layout, etc.) */}
     </BrowserRouter>
   )
 }
