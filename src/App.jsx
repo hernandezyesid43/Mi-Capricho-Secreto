@@ -14,7 +14,16 @@ import Tracking from './pages/customer/Tracking'
 import AdminPanel from './pages/admin/AdminPanel'
 import LoginPage from './pages/auth/LoginPage'
 import Footer from './components/Footer'
+import ScrollToTop from './components/ScrollToTop'  // ajusta la ruta
 
+function App() {
+  return (
+    <BrowserRouter>
+      <ScrollToTop />   {/* ← agrégalo aquí */}
+      {/* el resto de tu app (Routes, Layout, etc.) */}
+    </BrowserRouter>
+  )
+}
 function AnimatedRoutes() {
   const location = useLocation()
 
