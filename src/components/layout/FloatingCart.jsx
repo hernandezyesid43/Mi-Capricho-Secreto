@@ -2,9 +2,9 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { X, ShoppingBag, Minus, Plus, Trash2 } from 'lucide-react'
 import { useCartStore } from '../../store/cartStore'
 import { useAuthStore } from '../../store/authStore'
-import { buildWhatsAppURL } from '../../utils/whatsappEncoder'
 import { useState } from 'react'
 import AuthModal from './AuthModal'
+import { sendOrderToTelegram } from '../../services/telegramService'
 
 export default function FloatingCart() {
   const { items, isOpen, closeCart, removeItem, updateQuantity, getTotal, clearCart, checkout } = useCartStore()
@@ -21,14 +21,33 @@ export default function FloatingCart() {
     }
 
     setProcessing(true)
-    const result = await checkout(user.id)
 
-    if (result.error) {
-      alert('Error: ' + result.error)
-    } else {
-      // Generar URL de WhatsApp y redirigir
-      const whatsappUrl = buildWhatsAppURL(result.pedidoId, result.total, result.items)
-      window.open(whatsappUrl, '_blank')
+    try {
+      const result = await checkout(user.id)
+
+      if (result.error) {
+        alert('Error al crear el pedido: ' + result.error)
+        setProcessing(false)
+        return
+      }
+
+      // Enviar notificación a Telegram (tú la recibes)
+      await sendOrderToTelegram({
+        pedidoId: result.pedidoId,
+        total: result.total,
+        items: result.items,
+        user,
+      })
+
+      // Cerrar carrito y limpiar
+      clearCart()
+      closeCart()
+
+      // Mensaje de éxito para el cliente
+      alert(`¡Pedido #${result.pedidoId} recibido!\n\nTe contactaremos pronto para coordinar la entrega.\nGracias por elegir Mi Capricho Secreto 💕`)
+    } catch (err) {
+      console.error(err)
+      alert('Ocurrió un error. Intenta de nuevo.')
     }
 
     setProcessing(false)
