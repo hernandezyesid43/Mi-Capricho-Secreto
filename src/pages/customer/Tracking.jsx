@@ -18,41 +18,18 @@ import {
   MapPin,
   Calendar,
   RefreshCw,
-  XCircle
+  XCircle,
+  AlertTriangle
 } from 'lucide-react'
 import { supabase } from '../../services/supabase'
 import { useAuthStore } from '../../store/authStore'
 import { useToastStore } from '../../components/ui/ToastContainer'
 
 const STATUS_STEPS = [
-  {
-    key: 'recibido',
-    title: 'Pedido Recibido',
-    subtitle: 'En cola de producción',
-    icon: ClipboardList,
-    progress: 15,
-  },
-  {
-    key: 'preparacion',
-    title: 'En Preparación',
-    subtitle: 'Elaboración artesanal',
-    icon: ChefHat,
-    progress: 45,
-  },
-  {
-    key: 'en_camino',
-    title: 'En Camino',
-    subtitle: 'Rumbo a tu dirección',
-    icon: Truck,
-    progress: 75,
-  },
-  {
-    key: 'entregado',
-    title: '¡Entregado!',
-    subtitle: 'Disfruta tu capricho',
-    icon: CheckCircle2,
-    progress: 100,
-  },
+  { key: 'recibido', title: 'Pedido Recibido', subtitle: 'En cola', icon: ClipboardList },
+  { key: 'preparacion', title: 'En Preparación', subtitle: 'Elaboración', icon: ChefHat },
+  { key: 'en_camino', title: 'En Camino', subtitle: 'Despacho', icon: Truck },
+  { key: 'entregado', title: 'Entregado', subtitle: '¡Listo!', icon: CheckCircle2 },
 ]
 
 const STATUS_DETAILS = {
@@ -61,100 +38,104 @@ const STATUS_DETAILS = {
     progress: 15,
     icon: ClipboardList,
     title: 'Pedido Recibido',
-    badgeClass: 'pendiente',
-    description:
-      'Tu orden fue registrada con éxito en nuestro sistema y está en cola de producción artesanal.',
-    hint: 'Seleccionamos los ingredientes más frescos para iniciar la preparación.',
-    timeEst: 'Tiempo estimado de inicio: 15 - 30 min',
+    color: '#d97706',
+    bg: '#fffbeb',
+    description: 'Tu orden fue registrada y está en cola de producción artesanal.',
+    hint: 'Seleccionamos los ingredientes más frescos para iniciar.',
+    timeEst: 'Inicio estimado: 15-30 min',
   },
   Recibido: {
     stepIndex: 0,
     progress: 15,
     icon: ClipboardList,
     title: 'Pedido Recibido',
-    badgeClass: 'pendiente',
-    description:
-      'Tu orden fue registrada con éxito en nuestro sistema y está en cola de producción artesanal.',
-    hint: 'Seleccionamos los ingredientes más frescos para iniciar la preparación.',
-    timeEst: 'Tiempo estimado de inicio: 15 - 30 min',
+    color: '#d97706',
+    bg: '#fffbeb',
+    description: 'Tu orden fue registrada y está en cola de producción artesanal.',
+    hint: 'Seleccionamos los ingredientes más frescos para iniciar.',
+    timeEst: 'Inicio estimado: 15-30 min',
   },
   'En Preparación': {
     stepIndex: 1,
     progress: 45,
     icon: ChefHat,
-    title: 'En Preparación Artesanal',
-    badgeClass: 'preparacion',
-    description:
-      'Nuestros maestros artesanos están elaborando tu yogur y postres exclusivamente bajo tu pedido.',
-    hint: '0% conservantes artificiales y textura extra cremosa garantizada.',
-    timeEst: 'Envasado en frío: 1 a 3 días hábiles',
+    title: 'En Preparación',
+    color: '#C02E62',
+    bg: '#fdf2f8',
+    description: 'Estamos elaborando tu pedido de forma artesanal y exclusiva.',
+    hint: 'Sin conservantes artificiales.',
+    timeEst: '1 a 3 días hábiles',
   },
   'En preparación': {
     stepIndex: 1,
     progress: 45,
     icon: ChefHat,
-    title: 'En Preparación Artesanal',
-    badgeClass: 'preparacion',
-    description:
-      'Nuestros maestros artesanos están elaborando tu yogur y postres exclusivamente bajo tu pedido.',
-    hint: '0% conservantes artificiales y textura extra cremosa garantizada.',
-    timeEst: 'Envasado en frío: 1 a 3 días hábiles',
+    title: 'En Preparación',
+    color: '#C02E62',
+    bg: '#fdf2f8',
+    description: 'Estamos elaborando tu pedido de forma artesanal y exclusiva.',
+    hint: 'Sin conservantes artificiales.',
+    timeEst: '1 a 3 días hábiles',
   },
   Listo: {
     stepIndex: 2,
     progress: 75,
     icon: Truck,
     title: 'En Camino / Listo',
-    badgeClass: 'listo',
-    description:
-      'Tu pedido ha sido empacado con control térmico y sellado de seguridad, rumbo a tu dirección.',
-    hint: 'El domiciliario o punto de entrega está procesando la entrega.',
-    timeEst: 'Entrega estimada: Hoy mismo',
+    color: '#7c3aed',
+    bg: '#f5f3ff',
+    description: 'Tu pedido está empacado y listo para entrega o en camino.',
+    hint: 'Pronto lo tendrás en tu puerta.',
+    timeEst: 'Entrega estimada: hoy',
   },
   'En Camino': {
     stepIndex: 2,
     progress: 75,
     icon: Truck,
-    title: 'En Camino / Listo',
-    badgeClass: 'listo',
-    description:
-      'Tu pedido ha sido empacado con control térmico y sellado de seguridad, rumbo a tu dirección.',
-    hint: 'El domiciliario o punto de entrega está procesando la entrega.',
-    timeEst: 'Entrega estimada: Hoy mismo',
+    title: 'En Camino',
+    color: '#7c3aed',
+    bg: '#f5f3ff',
+    description: 'Tu pedido va rumbo a tu dirección.',
+    hint: 'El domiciliario está en camino.',
+    timeEst: 'Entrega estimada: hoy',
   },
   'En camino': {
     stepIndex: 2,
     progress: 75,
     icon: Truck,
-    title: 'En Camino / Listo',
-    badgeClass: 'listo',
-    description:
-      'Tu pedido ha sido empacado con control térmico y sellado de seguridad, rumbo a tu dirección.',
-    hint: 'El domiciliario o punto de entrega está procesando la entrega.',
-    timeEst: 'Entrega estimada: Hoy mismo',
+    title: 'En Camino',
+    color: '#7c3aed',
+    bg: '#f5f3ff',
+    description: 'Tu pedido va rumbo a tu dirección.',
+    hint: 'El domiciliario está en camino.',
+    timeEst: 'Entrega estimada: hoy',
   },
   Entregado: {
     stepIndex: 3,
     progress: 100,
     icon: CheckCircle2,
-    title: '¡Entregado con Éxito!',
-    badgeClass: 'entregado',
-    description:
-      'Tu capricho ha sido entregado exitosamente. ¡Esperamos que disfrutes cada bocado!',
-    hint: 'Recuerda mantener los productos refrigerados entre 2°C y 6°C.',
-    timeEst: 'Pedido Finalizado',
+    title: 'Entregado',
+    color: '#059669',
+    bg: '#ecfdf5',
+    description: '¡Tu capricho fue entregado! Esperamos que lo disfrutes.',
+    hint: 'Mantén refrigerado entre 2°C y 6°C.',
+    timeEst: 'Pedido finalizado',
   },
   Cancelado: {
     stepIndex: -1,
     progress: 0,
     icon: XCircle,
     title: 'Pedido Cancelado',
-    badgeClass: 'cancelado',
-    description:
-      'Este pedido fue cancelado. Si fue un error o deseas volver a ordenar, puedes hacerlo desde el catálogo.',
+    color: '#dc2626',
+    bg: '#fef2f2',
+    description: 'Este pedido fue cancelado. Puedes hacer uno nuevo cuando quieras.',
     hint: 'No se realizará ningún cargo ni preparación.',
     timeEst: 'Pedido anulado',
   },
+}
+
+function getStatusInfo(estado) {
+  return STATUS_DETAILS[estado] || STATUS_DETAILS.Pendiente
 }
 
 export default function Tracking() {
@@ -171,54 +152,70 @@ export default function Tracking() {
   const [copied, setCopied] = useState(false)
   const [hasSearched, setHasSearched] = useState(false)
 
-  // Cargar pedidos del usuario autenticado desde Supabase
-  useEffect(() => {
-    async function fetchUserOrders() {
-      if (!user) return
-      try {
-        const { data, error } = await supabase
-          .from('pedidos')
-          .select('*, perfiles(nombre, telefono, direccion), pedido_items(*, productos(*))')
-          .eq('usuario_id', user.id)
-          .order('created_at', { ascending: false })
+  const loadUserOrders = async () => {
+    if (!user) return
+    try {
+      const { data, error } = await supabase
+        .from('pedidos')
+        .select('*, perfiles(nombre, telefono, direccion), pedido_items(*, productos(*))')
+        .eq('usuario_id', user.id)
+        .order('created_at', { ascending: false })
 
-        if (!error && data && data.length > 0) {
-          setUserOrders(data)
-          if (!initialOrderQuery && !currentOrder) {
-            setCurrentOrder(data[0])
-            setSearchInput(data[0].id || data[0].tracking_code || '')
-          }
-        }
-      } catch (err) {
-        console.warn('Error cargando historial de pedidos:', err)
+      if (!error && data) {
+        setUserOrders(data)
+        return data
+      }
+    } catch (err) {
+      console.warn('Error cargando pedidos:', err)
+    }
+    return []
+  }
+
+  useEffect(() => {
+    async function init() {
+      const data = await loadUserOrders()
+      if (initialOrderQuery) {
+        setSearchInput(initialOrderQuery)
+        await handleSearch(initialOrderQuery, data)
+      } else if (data && data.length > 0) {
+        setCurrentOrder(data[0])
+        setSearchInput(data[0].id || data[0].tracking_code || '')
+        setHasSearched(true)
       }
     }
+    init()
+  }, [user])
 
-    fetchUserOrders()
-  }, [user, initialOrderQuery])
-
-  // Ejecutar búsqueda si viene por URL
-  useEffect(() => {
-    if (initialOrderQuery) {
-      setSearchInput(initialOrderQuery)
-      handleSearch(initialOrderQuery)
-    }
-  }, [initialOrderQuery])
-
-  const handleSearch = async (codeToSearch) => {
+  const handleSearch = async (codeToSearch, ordersList) => {
     const rawCode = (codeToSearch || searchInput || '').trim()
     if (!rawCode) return
 
     setLoading(true)
     setHasSearched(true)
 
-    const cleanCode = rawCode.toUpperCase()
+    const cleanCode = rawCode.toUpperCase().trim()
 
+    // Primero buscar en la lista local (más confiable)
+    const list = ordersList || userOrders
+    const localFound = list.find(
+      (o) =>
+        String(o.id).toUpperCase() === cleanCode ||
+        String(o.tracking_code || '').toUpperCase() === cleanCode
+    )
+
+    if (localFound) {
+      setCurrentOrder(localFound)
+      setSearchParams({ order: cleanCode })
+      setLoading(false)
+      return
+    }
+
+    // Si no está en local, consultar Supabase con comillas (importante para MCS-003)
     try {
       const { data: dbOrder, error } = await supabase
         .from('pedidos')
         .select('*, perfiles(nombre, telefono, direccion), pedido_items(*, productos(*))')
-        .or(`id.eq.${cleanCode},tracking_code.eq.${cleanCode}`)
+        .or(`id.eq."${cleanCode}",tracking_code.eq."${cleanCode}"`)
         .maybeSingle()
 
       if (!error && dbOrder) {
@@ -226,12 +223,12 @@ export default function Tracking() {
         setSearchParams({ order: cleanCode })
       } else {
         setCurrentOrder(null)
-        addToast('No encontramos ningún pedido registrado con ese código', 'error')
+        addToast('No encontramos ningún pedido con ese código', 'error')
       }
     } catch (err) {
-      console.warn('Error consultando Supabase:', err)
+      console.warn(err)
       setCurrentOrder(null)
-      addToast('Ocurrió un error al consultar el pedido', 'error')
+      addToast('Error al consultar el pedido', 'error')
     }
 
     setLoading(false)
@@ -241,8 +238,8 @@ export default function Tracking() {
     if (!code) return
     navigator.clipboard.writeText(code)
     setCopied(true)
-    addToast('¡Código de rastreo copiado al portapapeles!', 'success')
-    setTimeout(() => setCopied(false), 2500)
+    addToast('Código copiado', 'success')
+    setTimeout(() => setCopied(false), 2000)
   }
 
   const handleCancelOrder = async () => {
@@ -254,36 +251,47 @@ export default function Tracking() {
       return
     }
 
-    const confirmar = window.confirm(
-      `¿Seguro que deseas cancelar el pedido ${currentOrder.id || currentOrder.tracking_code}?\n\nEsta acción no se puede deshacer.`
+    const ok = window.confirm(
+      `¿Cancelar el pedido ${currentOrder.id}?\n\nEsta acción no se puede deshacer.`
     )
-    if (!confirmar) return
+    if (!ok) return
 
     setLoading(true)
 
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('pedidos')
         .update({ estado: 'Cancelado' })
         .eq('id', currentOrder.id)
+        .select()
+        .maybeSingle()
 
       if (error) {
-        addToast('No se pudo cancelar el pedido: ' + error.message, 'error')
+        console.error('Error cancelando:', error)
+        addToast(
+          'No se pudo cancelar. Revisa los permisos en Supabase (RLS UPDATE). ' + error.message,
+          'error'
+        )
+        setLoading(false)
+        return
+      }
+
+      if (!data) {
+        addToast(
+          'No se pudo actualizar el pedido. Verifica la política RLS de UPDATE en la tabla pedidos.',
+          'error'
+        )
         setLoading(false)
         return
       }
 
       setCurrentOrder({ ...currentOrder, estado: 'Cancelado' })
-
       setUserOrders((prev) =>
-        prev.map((o) =>
-          o.id === currentOrder.id ? { ...o, estado: 'Cancelado' } : o
-        )
+        prev.map((o) => (o.id === currentOrder.id ? { ...o, estado: 'Cancelado' } : o))
       )
 
       addToast('Pedido cancelado correctamente', 'success')
 
-      // Aviso a Telegram
       try {
         await fetch(
           `https://api.telegram.org/bot8965426151:AAG3nwgiCu6-EXvHDV3pSDg-m49UFtzfWcQ/sendMessage`,
@@ -308,188 +316,330 @@ export default function Tracking() {
 
   const statusInfo = useMemo(() => {
     if (!currentOrder) return STATUS_DETAILS.Pendiente
-    const st = currentOrder.estado || 'Pendiente'
-    return STATUS_DETAILS[st] || STATUS_DETAILS.Pendiente
+    return getStatusInfo(currentOrder.estado)
   }, [currentOrder])
 
   const whatsappHelpUrl = useMemo(() => {
     if (!currentOrder) return '#'
     const code = currentOrder.id || currentOrder.tracking_code
     const text = encodeURIComponent(
-      `Hola Mi Capricho Secreto ✨ Quisiera consultar información sobre el estado de mi pedido #${code}. ¡Gracias!`
+      `Hola Mi Capricho Secreto ✨ Consulto el estado de mi pedido #${code}. ¡Gracias!`
     )
     return `https://wa.me/573142748881?text=${text}`
   }, [currentOrder])
 
   return (
     <motion.div
-      className="page-transition tracking-page-wrapper"
+      className="page-transition"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
+      style={{ minHeight: '100vh', background: '#1A0D16', paddingTop: 40, paddingBottom: 60 }}
     >
-      <div className="tracking-ambient-glow" />
-
-      <div className="tracking-container">
-        {/* Encabezado Principal */}
-        <div className="tracking-header-section">
-          <span className="tracking-pill">
-            <Sparkles size={14} /> Seguimiento en Tiempo Real
-          </span>
-          <h1 className="tracking-main-title">Rastrea tu Pedido</h1>
-          <p className="tracking-subtitle">
-            Ingresa tu código único de seguimiento para conocer en qué etapa artesanal se encuentra tu capricho.
-          </p>
-
-          {/* Formulario de Búsqueda */}
-          <form
-            onSubmit={(e) => {
-              e.preventDefault()
-              handleSearch(searchInput)
+      <div style={{ maxWidth: 720, margin: '0 auto', padding: '0 16px' }}>
+        {/* Header */}
+        <div style={{ textAlign: 'center', marginBottom: 28 }}>
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              background: 'rgba(255,255,255,0.08)',
+              border: '1px solid rgba(255,255,255,0.12)',
+              borderRadius: 999,
+              padding: '6px 14px',
+              marginBottom: 12,
+              color: '#F5D3B3',
+              fontSize: 12,
+              fontWeight: 600,
             }}
-            className="tracking-search-form"
           >
-            <div className="tracking-input-wrapper">
-              <Search size={20} className="tracking-search-icon" />
-              <input
-                type="text"
-                placeholder="Ingresa tu código de pedido..."
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                className="tracking-input"
-                id="tracking-search-input"
-              />
-            </div>
-            <button
-              type="submit"
-              className="btn-rose tracking-submit-btn"
-              disabled={loading || !searchInput.trim()}
-              id="tracking-submit-btn"
-            >
-              {loading ? (
-                <div className="spinner-sm" />
-              ) : (
-                <>
-                  <span>Rastrear</span>
-                  <ArrowRight size={18} />
-                </>
-              )}
-            </button>
-          </form>
-
-          {/* Acceso Rápido a Pedidos del Usuario */}
-          {user && userOrders.length > 0 && (
-            <div className="user-quick-orders">
-              <span className="quick-orders-label">Tus pedidos recientes:</span>
-              <div className="quick-orders-chips">
-                {userOrders.map((ord) => {
-                  const code = ord.id || ord.tracking_code
-                  const isSelected = currentOrder && currentOrder.id === ord.id
-                  return (
-                    <button
-                      key={ord.id}
-                      type="button"
-                      onClick={() => {
-                        setSearchInput(code)
-                        handleSearch(code)
-                      }}
-                      className={`quick-order-chip ${isSelected ? 'active' : ''}`}
-                    >
-                      <ShoppingBag size={14} />
-                      <span>{code}</span>
-                      <span className={`chip-badge ${ord.estado?.toLowerCase()}`}>
-                        {ord.estado}
-                      </span>
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-          )}
+            <Sparkles size={14} /> Seguimiento en tiempo real
+          </div>
+          <h1
+            style={{
+              fontFamily: 'serif',
+              fontSize: '2rem',
+              fontWeight: 700,
+              color: 'white',
+              margin: '0 0 8px',
+            }}
+          >
+            Mis Pedidos
+          </h1>
+          <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: 14, margin: 0 }}>
+            Consulta el estado de tus caprichos artesanales
+          </p>
         </div>
 
-        {/* Resultado del Rastreo */}
+        {/* Buscador */}
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            handleSearch(searchInput)
+          }}
+          style={{
+            display: 'flex',
+            gap: 10,
+            marginBottom: 20,
+            background: 'white',
+            borderRadius: 16,
+            padding: 6,
+            boxShadow: '0 8px 30px rgba(0,0,0,0.25)',
+          }}
+        >
+          <div style={{ flex: 1, display: 'relative', display: 'flex', alignItems: 'center' }}>
+            <Search size={18} style={{ position: 'absolute', left: 14, color: '#a8a29e' }} />
+            <input
+              type="text"
+              placeholder="Código de pedido (ej: MCS-003)"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              style={{
+                width: '100%',
+                border: 'none',
+                outline: 'none',
+                padding: '12px 12px 12px 42px',
+                fontSize: 14,
+                borderRadius: 12,
+                background: 'transparent',
+              }}
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={loading || !searchInput.trim()}
+            style={{
+              background: 'linear-gradient(135deg, #D83A73, #C02E62)',
+              color: 'white',
+              border: 'none',
+              borderRadius: 12,
+              padding: '0 20px',
+              fontWeight: 700,
+              fontSize: 14,
+              cursor: loading ? 'not-allowed' : 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+            }}
+          >
+            {loading ? <RefreshCw size={16} className="spin-icon" /> : <>Rastrear <ArrowRight size={16} /></>}
+          </button>
+        </form>
+
+        {/* Chips de pedidos del usuario */}
+        {user && userOrders.length > 0 && (
+          <div style={{ marginBottom: 24 }}>
+            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, marginBottom: 10 }}>
+              Tus pedidos recientes
+            </p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {userOrders.map((ord) => {
+                const code = ord.id || ord.tracking_code
+                const info = getStatusInfo(ord.estado)
+                const isSelected = currentOrder && currentOrder.id === ord.id
+                return (
+                  <button
+                    key={ord.id}
+                    type="button"
+                    onClick={() => {
+                      setSearchInput(code)
+                      handleSearch(code)
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      padding: '8px 14px',
+                      borderRadius: 999,
+                      border: isSelected ? '2px solid #D83A73' : '1px solid rgba(255,255,255,0.15)',
+                      background: isSelected ? 'rgba(216,58,115,0.25)' : 'rgba(255,255,255,0.06)',
+                      color: 'white',
+                      fontSize: 13,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <ShoppingBag size={14} />
+                    <span>{code}</span>
+                    <span
+                      style={{
+                        fontSize: 11,
+                        padding: '2px 8px',
+                        borderRadius: 999,
+                        background: info.bg,
+                        color: info.color,
+                        fontWeight: 700,
+                      }}
+                    >
+                      {info.title}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Resultado */}
         <AnimatePresence mode="wait">
           {loading ? (
             <motion.div
               key="loading"
-              className="tracking-loading-state"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
+              style={{
+                background: 'white',
+                borderRadius: 24,
+                padding: 48,
+                textAlign: 'center',
+                color: '#78716c',
+              }}
             >
-              <RefreshCw size={32} className="spin-icon" />
-              <p>Consultando base de datos de producción...</p>
+              <RefreshCw size={28} style={{ marginBottom: 12 }} />
+              <p>Consultando tu pedido...</p>
             </motion.div>
           ) : currentOrder ? (
             <motion.div
-              key={currentOrder.id}
-              className="tracking-result-card"
-              initial={{ opacity: 0, y: 20 }}
+              key={currentOrder.id + currentOrder.estado}
+              initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.5 }}
+              exit={{ opacity: 0 }}
+              style={{
+                background: 'white',
+                borderRadius: 24,
+                overflow: 'hidden',
+                boxShadow: '0 12px 40px rgba(0,0,0,0.2)',
+              }}
             >
-              {/* Tarjeta de Resumen Superior */}
-              <div className="order-summary-header">
-                <div className="order-code-block">
-                  <span className="order-code-label">Código de Seguimiento</span>
-                  <div className="order-code-display">
-                    <h2>{currentOrder.id || currentOrder.tracking_code}</h2>
+              {/* Header del pedido */}
+              <div
+                style={{
+                  padding: '20px 24px',
+                  borderBottom: '1px solid #fce7f3',
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  gap: 12,
+                }}
+              >
+                <div>
+                  <p style={{ fontSize: 11, color: '#a8a29e', margin: '0 0 4px', fontWeight: 600, letterSpacing: '0.05em' }}>
+                    CÓDIGO DE SEGUIMIENTO
+                  </p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <h2 style={{ margin: 0, fontSize: '1.5rem', fontFamily: 'serif', color: '#1A0D16' }}>
+                      {currentOrder.id || currentOrder.tracking_code}
+                    </h2>
                     <button
                       type="button"
-                      className="btn-copy-code"
-                      onClick={() =>
-                        handleCopyCode(currentOrder.id || currentOrder.tracking_code)
-                      }
-                      title="Copiar código"
+                      onClick={() => handleCopyCode(currentOrder.id || currentOrder.tracking_code)}
+                      style={{
+                        border: 'none',
+                        background: '#fce7f3',
+                        borderRadius: 8,
+                        padding: 6,
+                        cursor: 'pointer',
+                        color: '#C02E62',
+                      }}
                     >
-                      {copied ? (
-                        <Check size={16} className="text-success" />
-                      ) : (
-                        <Copy size={16} />
-                      )}
+                      {copied ? <Check size={16} /> : <Copy size={16} />}
                     </button>
                   </div>
                 </div>
 
-                <div className="order-meta-badges">
-                  <div className={`status-pill ${statusInfo.badgeClass}`}>
-                    <span className="status-dot" />
-                    <span>{statusInfo.title}</span>
-                  </div>
+                <div
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    padding: '8px 14px',
+                    borderRadius: 999,
+                    background: statusInfo.bg,
+                    color: statusInfo.color,
+                    fontWeight: 700,
+                    fontSize: 13,
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: '50%',
+                      background: statusInfo.color,
+                    }}
+                  />
+                  {statusInfo.title}
                 </div>
               </div>
 
-              {/* LÍNEA DE TIEMPO / STEPPER */}
+              {/* Stepper (oculto si cancelado) */}
               {currentOrder.estado !== 'Cancelado' && (
-                <div className="stepper-section">
-                  <div className="stepper-track-bg">
-                    <motion.div
-                      className="stepper-track-fill"
-                      initial={{ width: 0 }}
-                      animate={{ width: `${statusInfo.progress}%` }}
-                      transition={{ duration: 0.8, ease: 'easeOut' }}
-                    />
-                  </div>
-
-                  <div className="stepper-nodes-container">
+                <div style={{ padding: '28px 24px 8px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', position: 'relative' }}>
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: 18,
+                        left: '12%',
+                        right: '12%',
+                        height: 3,
+                        background: '#fce7f3',
+                        zIndex: 0,
+                      }}
+                    >
+                      <div
+                        style={{
+                          height: '100%',
+                          width: `${statusInfo.progress}%`,
+                          background: 'linear-gradient(90deg, #D83A73, #C02E62)',
+                          borderRadius: 2,
+                          transition: 'width 0.6s ease',
+                        }}
+                      />
+                    </div>
                     {STATUS_STEPS.map((step, idx) => {
                       const Icon = step.icon
-                      const isCompleted = idx < statusInfo.stepIndex
-                      const isCurrent = idx === statusInfo.stepIndex
-
+                      const done = idx < statusInfo.stepIndex
+                      const active = idx === statusInfo.stepIndex
                       return (
                         <div
                           key={step.key}
-                          className={`stepper-node-item ${isCompleted ? 'completed' : ''} ${isCurrent ? 'active' : ''
-                            }`}
+                          style={{
+                            flex: 1,
+                            textAlign: 'center',
+                            position: 'relative',
+                            zIndex: 1,
+                            opacity: idx > statusInfo.stepIndex ? 0.4 : 1,
+                          }}
                         >
-                          <div className="stepper-node-icon-wrapper">
-                            <Icon size={20} />
+                          <div
+                            style={{
+                              width: 38,
+                              height: 38,
+                              borderRadius: 12,
+                              margin: '0 auto 8px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              background: done || active
+                                ? 'linear-gradient(135deg, #D83A73, #C02E62)'
+                                : 'white',
+                              color: done || active ? 'white' : '#a8a29e',
+                              border: done || active ? 'none' : '2px solid #fce7f3',
+                              boxShadow: active ? '0 0 0 4px rgba(216,58,115,0.2)' : 'none',
+                            }}
+                          >
+                            <Icon size={18} />
                           </div>
-                          <span className="stepper-node-label">{step.title}</span>
-                          <span className="stepper-node-sub">{step.subtitle}</span>
+                          <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: '#1A0D16' }}>
+                            {step.title}
+                          </p>
+                          <p style={{ margin: '2px 0 0', fontSize: 11, color: '#a8a29e' }}>
+                            {step.subtitle}
+                          </p>
                         </div>
                       )
                     })}
@@ -497,189 +647,328 @@ export default function Tracking() {
                 </div>
               )}
 
-              {/* Tarjeta Informativa del Estado Actual */}
-              <div className="status-info-banner">
-                <div className="status-banner-icon">
-                  <statusInfo.icon size={28} />
-                </div>
-                <div className="status-banner-text">
-                  <h3>{statusInfo.title}</h3>
-                  <p className="status-desc">{statusInfo.description}</p>
-                  <div className="status-hint-row">
-                    <span className="hint-pill">
-                      <Clock size={14} /> {statusInfo.timeEst}
-                    </span>
-                    <span className="hint-pill light">
-                      <Sparkles size={14} /> {statusInfo.hint}
-                    </span>
+              {/* Info del estado */}
+              <div style={{ padding: '20px 24px' }}>
+                <div
+                  style={{
+                    background: statusInfo.bg,
+                    borderRadius: 16,
+                    padding: 16,
+                    display: 'flex',
+                    gap: 14,
+                    alignItems: 'flex-start',
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: 12,
+                      background: 'white',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: statusInfo.color,
+                      flexShrink: 0,
+                    }}
+                  >
+                    <statusInfo.icon size={22} />
+                  </div>
+                  <div>
+                    <h3 style={{ margin: '0 0 4px', fontSize: 16, color: '#1A0D16' }}>
+                      {statusInfo.title}
+                    </h3>
+                    <p style={{ margin: '0 0 10px', fontSize: 13, color: '#57534e', lineHeight: 1.5 }}>
+                      {statusInfo.description}
+                    </p>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                      <span
+                        style={{
+                          fontSize: 11,
+                          background: 'white',
+                          padding: '4px 10px',
+                          borderRadius: 999,
+                          color: '#57534e',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 4,
+                        }}
+                      >
+                        <Clock size={12} /> {statusInfo.timeEst}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: 11,
+                          background: 'white',
+                          padding: '4px 10px',
+                          borderRadius: 999,
+                          color: '#57534e',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 4,
+                        }}
+                      >
+                        <Sparkles size={12} /> {statusInfo.hint}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Grilla de Detalles del Pedido */}
-              <div className="tracking-details-grid">
-                <div className="detail-box">
-                  <div className="detail-box-title">
-                    <Calendar size={16} /> Fecha de Registro
-                  </div>
-                  <p className="detail-box-val">
+              {/* Detalles */}
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+                  gap: 12,
+                  padding: '0 24px 20px',
+                }}
+              >
+                <div style={{ background: '#fafaf9', borderRadius: 14, padding: 14 }}>
+                  <p style={{ margin: '0 0 4px', fontSize: 11, color: '#a8a29e', fontWeight: 600 }}>
+                    <Calendar size={12} style={{ verticalAlign: 'middle' }} /> FECHA
+                  </p>
+                  <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: '#1A0D16' }}>
                     {currentOrder.created_at
                       ? new Date(currentOrder.created_at).toLocaleDateString('es-CO', {
-                        year: 'numeric',
-                        month: 'long',
                         day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
+                        month: 'short',
+                        year: 'numeric',
                       })
-                      : 'Reciente'}
+                      : '—'}
                   </p>
                 </div>
-
-                <div className="detail-box">
-                  <div className="detail-box-title">
-                    <Clock size={16} /> Elaboración / Entrega Estimada
-                  </div>
-                  <p className="detail-box-val">
+                <div style={{ background: '#fafaf9', borderRadius: 14, padding: 14 }}>
+                  <p style={{ margin: '0 0 4px', fontSize: 11, color: '#a8a29e', fontWeight: 600 }}>
+                    <Clock size={12} style={{ verticalAlign: 'middle' }} /> ENTREGA EST.
+                  </p>
+                  <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: '#1A0D16' }}>
                     {currentOrder.fecha_estimada
                       ? new Date(currentOrder.fecha_estimada).toLocaleDateString('es-CO', {
-                        weekday: 'short',
-                        month: 'short',
                         day: 'numeric',
+                        month: 'short',
                       })
-                      : '1 a 3 días hábiles'}
+                      : '1-3 días'}
                   </p>
                 </div>
-
-                <div className="detail-box">
-                  <div className="detail-box-title">
-                    <MapPin size={16} /> Destino de Entrega
-                  </div>
-                  <p className="detail-box-val">
+                <div style={{ background: '#fafaf9', borderRadius: 14, padding: 14 }}>
+                  <p style={{ margin: '0 0 4px', fontSize: 11, color: '#a8a29e', fontWeight: 600 }}>
+                    <MapPin size={12} style={{ verticalAlign: 'middle' }} /> DESTINO
+                  </p>
+                  <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: '#1A0D16' }}>
                     {currentOrder.direccion ||
                       currentOrder.perfiles?.direccion ||
-                      'Bogotá D.C., Colombia'}
+                      'Bogotá D.C.'}
                   </p>
                 </div>
               </div>
 
-              {/* Lista de Productos en la Orden */}
-              {currentOrder.pedido_items && currentOrder.pedido_items.length > 0 && (
-                <div className="order-items-breakdown">
-                  <h4 className="breakdown-title">
-                    <ShoppingBag size={18} /> Artículos en este Pedido
-                  </h4>
-                  <div className="items-list">
+              {/* Productos */}
+              {currentOrder.pedido_items?.length > 0 && (
+                <div style={{ padding: '0 24px 20px' }}>
+                  <p
+                    style={{
+                      margin: '0 0 12px',
+                      fontSize: 13,
+                      fontWeight: 700,
+                      color: '#1A0D16',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                    }}
+                  >
+                    <ShoppingBag size={16} /> Artículos del pedido
+                  </p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                     {currentOrder.pedido_items.map((it, i) => {
                       const prod = it.productos || it
-                      const img =
-                        prod.imagen_url ||
-                        it.imagen_url ||
-                        'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=200&auto=format&fit=crop&q=80'
-                      const name =
-                        prod.nombre || it.nombre || `Producto #${it.producto_id || i + 1}`
+                      const name = prod.nombre || it.nombre || `Producto ${i + 1}`
                       const qty = it.cantidad || 1
                       const price = it.precio_unitario || prod.precio || 0
-
+                      const img =
+                        prod.imagen_url ||
+                        'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=100'
                       return (
-                        <div key={it.id || i} className="order-item-row">
-                          <img src={img} alt={name} className="item-thumb" />
-                          <div className="item-details">
-                            <p className="item-name">{name}</p>
-                            <span className="item-qty">Cantidad: {qty} unidad(es)</span>
+                        <div
+                          key={it.id || i}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 12,
+                            padding: 10,
+                            background: '#fafaf9',
+                            borderRadius: 12,
+                          }}
+                        >
+                          <img
+                            src={img}
+                            alt={name}
+                            style={{
+                              width: 48,
+                              height: 48,
+                              borderRadius: 10,
+                              objectFit: 'cover',
+                            }}
+                          />
+                          <div style={{ flex: 1 }}>
+                            <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: '#1A0D16' }}>
+                              {name}
+                            </p>
+                            <p style={{ margin: 0, fontSize: 12, color: '#a8a29e' }}>
+                              x{qty}
+                            </p>
                           </div>
-                          <p className="item-price">
+                          <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#1A0D16' }}>
                             ${(price * qty).toLocaleString('es-CO')}
                           </p>
                         </div>
                       )
                     })}
                   </div>
-
-                  <div className="order-total-bar">
-                    <span>Total del pedido</span>
-                    <span className="total-num">
-                      ${Number(currentOrder.total || 0).toLocaleString('es-CO')}
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      marginTop: 14,
+                      paddingTop: 14,
+                      borderTop: '1px solid #fce7f3',
+                    }}
+                  >
+                    <span style={{ fontWeight: 600, color: '#57534e' }}>Total</span>
+                    <span style={{ fontWeight: 800, fontSize: 18, color: '#C02E62' }}>
+                      ${Number(currentOrder.total || 0).toLocaleString('es-CO')} COP
                     </span>
                   </div>
                 </div>
               )}
 
-              {/* Botones de Acción */}
-              <div className="tracking-card-actions">
-                {(currentOrder.estado === 'Pendiente' ||
-                  currentOrder.estado === 'Recibido') && (
-                    <button
-                      type="button"
-                      onClick={handleCancelOrder}
-                      disabled={loading}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: 8,
-                        width: '100%',
-                        padding: '12px 16px',
-                        marginBottom: 10,
-                        borderRadius: 12,
-                        border: '1px solid #fca5a5',
-                        background: '#fef2f2',
-                        color: '#b91c1c',
-                        fontWeight: 700,
-                        fontSize: 14,
-                        cursor: loading ? 'not-allowed' : 'pointer',
-                      }}
-                    >
-                      <XCircle size={18} />
-                      <span>Cancelar este pedido</span>
-                    </button>
-                  )}
+              {/* Acciones */}
+              <div
+                style={{
+                  padding: '16px 24px 24px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 10,
+                }}
+              >
+                {(currentOrder.estado === 'Pendiente' || currentOrder.estado === 'Recibido') && (
+                  <button
+                    type="button"
+                    onClick={handleCancelOrder}
+                    disabled={loading}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 8,
+                      width: '100%',
+                      padding: '13px 16px',
+                      borderRadius: 14,
+                      border: '1px solid #fecaca',
+                      background: '#fef2f2',
+                      color: '#b91c1c',
+                      fontWeight: 700,
+                      fontSize: 14,
+                      cursor: loading ? 'not-allowed' : 'pointer',
+                    }}
+                  >
+                    <XCircle size={18} />
+                    Cancelar este pedido
+                  </button>
+                )}
 
                 <a
                   href={whatsappHelpUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="btn-whatsapp-track"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                    width: '100%',
+                    padding: '13px 16px',
+                    borderRadius: 14,
+                    background: '#059669',
+                    color: 'white',
+                    fontWeight: 700,
+                    fontSize: 14,
+                    textDecoration: 'none',
+                  }}
                 >
                   <MessageCircle size={18} />
-                  <span>Consultar por WhatsApp</span>
+                  Consultar por WhatsApp
                 </a>
-                <Link to="/catalogo" className="btn-explore-track">
-                  <span>Pedir algo más</span>
-                  <ArrowRight size={16} />
+
+                <Link
+                  to="/catalogo"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                    width: '100%',
+                    padding: '13px 16px',
+                    borderRadius: 14,
+                    background: '#fce7f3',
+                    color: '#C02E62',
+                    fontWeight: 700,
+                    fontSize: 14,
+                    textDecoration: 'none',
+                  }}
+                >
+                  Pedir algo más <ArrowRight size={16} />
                 </Link>
               </div>
             </motion.div>
           ) : hasSearched ? (
             <motion.div
               key="not-found"
-              className="tracking-empty-state"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              style={{
+                background: 'white',
+                borderRadius: 24,
+                padding: 40,
+                textAlign: 'center',
+              }}
             >
-              <PackageOpen size={48} className="empty-icon" />
-              <h3>No se encontró el pedido</h3>
-              <p>
-                No encontramos ningún pedido registrado con el código{' '}
-                <strong>"{searchInput}"</strong>. Verifica que el código esté bien escrito e
-                intenta nuevamente.
+              <PackageOpen size={48} style={{ color: '#d6d3d1', marginBottom: 12 }} />
+              <h3 style={{ margin: '0 0 8px', color: '#1A0D16' }}>No se encontró el pedido</h3>
+              <p style={{ color: '#78716c', fontSize: 14, marginBottom: 20 }}>
+                No hay ningún pedido con el código <strong>"{searchInput}"</strong>
               </p>
-              <div className="empty-actions">
-                <Link to="/catalogo" className="btn-rose btn-sm">
-                  Ir al Catálogo
-                </Link>
-              </div>
+              <Link
+                to="/catalogo"
+                style={{
+                  display: 'inline-block',
+                  padding: '10px 20px',
+                  borderRadius: 12,
+                  background: 'linear-gradient(135deg, #D83A73, #C02E62)',
+                  color: 'white',
+                  fontWeight: 700,
+                  textDecoration: 'none',
+                  fontSize: 14,
+                }}
+              >
+                Ir al catálogo
+              </Link>
             </motion.div>
           ) : (
-            <div className="tracking-initial-hint">
-              <div className="hint-card">
-                <ChefHat size={32} className="hint-icon" />
-                <h4>Producción Artesanal Bajo Pedido</h4>
-                <p>
-                  Cada yogur y postre se elabora con ingredientes 100% naturales. Rastrea en todo
-                  momento su preparación y despacho.
-                </p>
-              </div>
+            <div
+              style={{
+                background: 'rgba(255,255,255,0.06)',
+                borderRadius: 24,
+                padding: 40,
+                textAlign: 'center',
+                color: 'rgba(255,255,255,0.7)',
+              }}
+            >
+              <ChefHat size={36} style={{ marginBottom: 12, opacity: 0.6 }} />
+              <h4 style={{ margin: '0 0 8px', color: 'white' }}>Producción artesanal bajo pedido</h4>
+              <p style={{ margin: 0, fontSize: 14 }}>
+                Ingresa tu código o selecciona uno de tus pedidos recientes.
+              </p>
             </div>
           )}
         </AnimatePresence>
