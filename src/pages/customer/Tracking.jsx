@@ -17,7 +17,8 @@ import {
   ArrowRight,
   MapPin,
   Calendar,
-  RefreshCw
+  RefreshCw,
+  XCircle
 } from 'lucide-react'
 import { supabase } from '../../services/supabase'
 import { useAuthStore } from '../../store/authStore'
@@ -143,6 +144,17 @@ const STATUS_DETAILS = {
     hint: 'Recuerda mantener los productos refrigerados entre 2°C y 6°C.',
     timeEst: 'Pedido Finalizado',
   },
+  Cancelado: {
+    stepIndex: -1,
+    progress: 0,
+    icon: XCircle,
+    title: 'Pedido Cancelado',
+    badgeClass: 'cancelado',
+    description:
+      'Este pedido fue cancelado. Si fue un error o deseas volver a ordenar, puedes hacerlo desde el catálogo.',
+    hint: 'No se realizará ningún cargo ni preparación.',
+    timeEst: 'Pedido anulado',
+  },
 }
 
 export default function Tracking() {
@@ -172,7 +184,6 @@ export default function Tracking() {
 
         if (!error && data && data.length > 0) {
           setUserOrders(data)
-          // Si no hay query param, auto-cargar el pedido más reciente
           if (!initialOrderQuery && !currentOrder) {
             setCurrentOrder(data[0])
             setSearchInput(data[0].id || data[0].tracking_code || '')
@@ -203,7 +214,6 @@ export default function Tracking() {
 
     const cleanCode = rawCode.toUpperCase()
 
-    // Consulta exclusiva en Supabase (tabla pedidos)
     try {
       const { data: dbOrder, error } = await supabase
         .from('pedidos')
@@ -235,14 +245,73 @@ export default function Tracking() {
     setTimeout(() => setCopied(false), 2500)
   }
 
-  // Configuración del estado actual
+  const handleCancelOrder = async () => {
+    if (!currentOrder) return
+
+    const estado = currentOrder.estado || ''
+    if (estado !== 'Pendiente' && estado !== 'Recibido') {
+      addToast('Solo se pueden cancelar pedidos en estado Recibido', 'error')
+      return
+    }
+
+    const confirmar = window.confirm(
+      `¿Seguro que deseas cancelar el pedido ${currentOrder.id || currentOrder.tracking_code}?\n\nEsta acción no se puede deshacer.`
+    )
+    if (!confirmar) return
+
+    setLoading(true)
+
+    try {
+      const { error } = await supabase
+        .from('pedidos')
+        .update({ estado: 'Cancelado' })
+        .eq('id', currentOrder.id)
+
+      if (error) {
+        addToast('No se pudo cancelar el pedido: ' + error.message, 'error')
+        setLoading(false)
+        return
+      }
+
+      setCurrentOrder({ ...currentOrder, estado: 'Cancelado' })
+
+      setUserOrders((prev) =>
+        prev.map((o) =>
+          o.id === currentOrder.id ? { ...o, estado: 'Cancelado' } : o
+        )
+      )
+
+      addToast('Pedido cancelado correctamente', 'success')
+
+      // Aviso a Telegram
+      try {
+        await fetch(
+          `https://api.telegram.org/bot8965426151:AAG3nwgiCu6-EXvHDV3pSDg-m49UFtzfWcQ/sendMessage`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chat_id: '1375710224',
+              text: `❌ *PEDIDO CANCELADO*\n\nCódigo: ${currentOrder.id}\nCliente: ${user?.email || 'N/A'}\nTotal: $${Number(currentOrder.total || 0).toLocaleString('es-CO')} COP`,
+              parse_mode: 'Markdown',
+            }),
+          }
+        )
+      } catch (_) { }
+    } catch (err) {
+      console.error(err)
+      addToast('Error al cancelar el pedido', 'error')
+    }
+
+    setLoading(false)
+  }
+
   const statusInfo = useMemo(() => {
     if (!currentOrder) return STATUS_DETAILS.Pendiente
     const st = currentOrder.estado || 'Pendiente'
     return STATUS_DETAILS[st] || STATUS_DETAILS.Pendiente
   }, [currentOrder])
 
-  // WhatsApp de ayuda sobre el pedido
   const whatsappHelpUrl = useMemo(() => {
     if (!currentOrder) return '#'
     const code = currentOrder.id || currentOrder.tracking_code
@@ -315,7 +384,7 @@ export default function Tracking() {
               <div className="quick-orders-chips">
                 {userOrders.map((ord) => {
                   const code = ord.id || ord.tracking_code
-                  const isSelected = currentOrder && (currentOrder.id === ord.id)
+                  const isSelected = currentOrder && currentOrder.id === ord.id
                   return (
                     <button
                       key={ord.id}
@@ -370,10 +439,16 @@ export default function Tracking() {
                     <button
                       type="button"
                       className="btn-copy-code"
-                      onClick={() => handleCopyCode(currentOrder.id || currentOrder.tracking_code)}
+                      onClick={() =>
+                        handleCopyCode(currentOrder.id || currentOrder.tracking_code)
+                      }
                       title="Copiar código"
                     >
-                      {copied ? <Check size={16} className="text-success" /> : <Copy size={16} />}
+                      {copied ? (
+                        <Check size={16} className="text-success" />
+                      ) : (
+                        <Copy size={16} />
+                      )}
                     </button>
                   </div>
                 </div>
@@ -386,39 +461,41 @@ export default function Tracking() {
                 </div>
               </div>
 
-              {/* LÍNEA DE TIEMPO / STEPPER DE PROGRESO */}
-              <div className="stepper-section">
-                <div className="stepper-track-bg">
-                  <motion.div
-                    className="stepper-track-fill"
-                    initial={{ width: 0 }}
-                    animate={{ width: `${statusInfo.progress}%` }}
-                    transition={{ duration: 0.8, ease: 'easeOut' }}
-                  />
-                </div>
+              {/* LÍNEA DE TIEMPO / STEPPER */}
+              {currentOrder.estado !== 'Cancelado' && (
+                <div className="stepper-section">
+                  <div className="stepper-track-bg">
+                    <motion.div
+                      className="stepper-track-fill"
+                      initial={{ width: 0 }}
+                      animate={{ width: `${statusInfo.progress}%` }}
+                      transition={{ duration: 0.8, ease: 'easeOut' }}
+                    />
+                  </div>
 
-                <div className="stepper-nodes-container">
-                  {STATUS_STEPS.map((step, idx) => {
-                    const Icon = step.icon
-                    const isCompleted = idx < statusInfo.stepIndex
-                    const isCurrent = idx === statusInfo.stepIndex
+                  <div className="stepper-nodes-container">
+                    {STATUS_STEPS.map((step, idx) => {
+                      const Icon = step.icon
+                      const isCompleted = idx < statusInfo.stepIndex
+                      const isCurrent = idx === statusInfo.stepIndex
 
-                    return (
-                      <div
-                        key={step.key}
-                        className={`stepper-node-item ${isCompleted ? 'completed' : ''} ${isCurrent ? 'active' : ''
-                          }`}
-                      >
-                        <div className="stepper-node-icon-wrapper">
-                          <Icon size={20} />
+                      return (
+                        <div
+                          key={step.key}
+                          className={`stepper-node-item ${isCompleted ? 'completed' : ''} ${isCurrent ? 'active' : ''
+                            }`}
+                        >
+                          <div className="stepper-node-icon-wrapper">
+                            <Icon size={20} />
+                          </div>
+                          <span className="stepper-node-label">{step.title}</span>
+                          <span className="stepper-node-sub">{step.subtitle}</span>
                         </div>
-                        <span className="stepper-node-label">{step.title}</span>
-                        <span className="stepper-node-sub">{step.subtitle}</span>
-                      </div>
-                    )
-                  })}
+                      )
+                    })}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Tarjeta Informativa del Estado Actual */}
               <div className="status-info-banner">
@@ -494,8 +571,12 @@ export default function Tracking() {
                   <div className="items-list">
                     {currentOrder.pedido_items.map((it, i) => {
                       const prod = it.productos || it
-                      const img = prod.imagen_url || it.imagen_url || 'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=200&auto=format&fit=crop&q=80'
-                      const name = prod.nombre || it.nombre || `Producto #${it.producto_id || i + 1}`
+                      const img =
+                        prod.imagen_url ||
+                        it.imagen_url ||
+                        'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=200&auto=format&fit=crop&q=80'
+                      const name =
+                        prod.nombre || it.nombre || `Producto #${it.producto_id || i + 1}`
                       const qty = it.cantidad || 1
                       const price = it.precio_unitario || prod.precio || 0
 
@@ -515,7 +596,7 @@ export default function Tracking() {
                   </div>
 
                   <div className="order-total-bar">
-                    <span>Total Cancelado</span>
+                    <span>Total del pedido</span>
                     <span className="total-num">
                       ${Number(currentOrder.total || 0).toLocaleString('es-CO')}
                     </span>
@@ -525,6 +606,34 @@ export default function Tracking() {
 
               {/* Botones de Acción */}
               <div className="tracking-card-actions">
+                {(currentOrder.estado === 'Pendiente' ||
+                  currentOrder.estado === 'Recibido') && (
+                    <button
+                      type="button"
+                      onClick={handleCancelOrder}
+                      disabled={loading}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 8,
+                        width: '100%',
+                        padding: '12px 16px',
+                        marginBottom: 10,
+                        borderRadius: 12,
+                        border: '1px solid #fca5a5',
+                        background: '#fef2f2',
+                        color: '#b91c1c',
+                        fontWeight: 700,
+                        fontSize: 14,
+                        cursor: loading ? 'not-allowed' : 'pointer',
+                      }}
+                    >
+                      <XCircle size={18} />
+                      <span>Cancelar este pedido</span>
+                    </button>
+                  )}
+
                 <a
                   href={whatsappHelpUrl}
                   target="_blank"
@@ -551,7 +660,9 @@ export default function Tracking() {
               <PackageOpen size={48} className="empty-icon" />
               <h3>No se encontró el pedido</h3>
               <p>
-                No encontramos ningún pedido registrado con el código <strong>"{searchInput}"</strong>. Verifica que el código esté bien escrito e intenta nuevamente.
+                No encontramos ningún pedido registrado con el código{' '}
+                <strong>"{searchInput}"</strong>. Verifica que el código esté bien escrito e
+                intenta nuevamente.
               </p>
               <div className="empty-actions">
                 <Link to="/catalogo" className="btn-rose btn-sm">
@@ -565,7 +676,8 @@ export default function Tracking() {
                 <ChefHat size={32} className="hint-icon" />
                 <h4>Producción Artesanal Bajo Pedido</h4>
                 <p>
-                  Cada yogur y postre se elabora con ingredientes 100% naturales. Rastrea en todo momento su preparación y despacho.
+                  Cada yogur y postre se elabora con ingredientes 100% naturales. Rastrea en todo
+                  momento su preparación y despacho.
                 </p>
               </div>
             </div>
