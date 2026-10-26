@@ -15,6 +15,7 @@ import AdminPanel from './pages/admin/AdminPanel'
 import LoginPage from './pages/auth/LoginPage'
 import Footer from './components/Footer'
 import ScrollToTop from './components/ScrollToTop'
+import WhatsAppButton from './components/layout/WhatsAppButton'
 
 function AnimatedRoutes() {
   const location = useLocation()
@@ -61,6 +62,7 @@ export default function App() {
         <PremiumHeader />
         <FloatingCart />
         <ToastContainer />
+        <WhatsAppButton />
 
         <main className="flex-grow flex flex-col relative">
           <AnimatedRoutes />
